@@ -36,7 +36,7 @@ stages:
         rm -rf node_modules dist
 
         echo "=== Installing dependencies ==="
-        npm ci
+        npm install
 
         echo "=== Running ESLint ==="
         npm run lint || echo "Lint warnings ignored (no fail build)."
