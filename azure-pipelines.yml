@@ -90,7 +90,7 @@ stages:
               downloadType: 'single'
               artifactName: 'drop'
               downloadPath: '$(System.ArtifactsDirectory)/app'
-            displayName: 'Download Build Artifacts for Deployment'
+            displayName: 'Download Build Artifacts'
 
           - task: AzureWebApp@1
             displayName: 'Deploy to Azure App Service (CRMLogistico)'
@@ -98,7 +98,8 @@ stages:
               azureSubscription: 'azure-devops'
               appType: 'webAppLinux'
               appName: 'CRMLogistico'
-              package: '$(System.ArtifactsDirectory)/app/drop/**'
+              package: '$(System.ArtifactsDirectory)/app/drop/dist/**'
+
 
           - task: AzureCLI@2
             displayName: 'Close Linked Work Items (auto-linked by commit)'
