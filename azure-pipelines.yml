@@ -93,11 +93,11 @@ stages:
             displayName: 'Download Build Artifacts for Deployment'
 
           - task: AzureWebApp@1
-            displayName: 'Deploy to Azure App Service (allenare)'
+            displayName: 'Deploy to Azure App Service (CRMLogistico)'
             inputs:
               azureSubscription: 'azure-devops'  # ⚠️ Asegúrate de que el nombre del service connection coincida exactamente
               appType: 'webAppLinux'
-              appName: 'allenare'
+              appName: 'CRMLogistico'
               package: '$(System.ArtifactsDirectory)/app/drop'
 
           - task: AzureCLI@2
@@ -130,6 +130,6 @@ stages:
     steps:
     - script: |
         echo "=== Performing health check ==="
-        curl -f -I https://allenare-fnfjg7crgyd7bqf9.canadacentral-01.azurewebsites.net || (echo "ERROR: Site unreachable or returned an error status" && exit 1)
+        curl -f -I https://crmlogistico-gqembuffawgdfudk.canadacentral-01.azurewebsites.net || (echo "ERROR: Site unreachable or returned an error status" && exit 1)
         echo "Health check passed!"
       displayName: 'Check Deployment Health'
