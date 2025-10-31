@@ -95,10 +95,10 @@ stages:
           - task: AzureWebApp@1
             displayName: 'Deploy to Azure App Service (CRMLogistico)'
             inputs:
-              azureSubscription: 'azure-devops'  # ⚠️ Asegúrate de que el nombre del service connection coincida exactamente
+              azureSubscription: 'azure-devops'
               appType: 'webAppLinux'
               appName: 'CRMLogistico'
-              package: '$(System.ArtifactsDirectory)/app/drop'
+              package: '$(System.ArtifactsDirectory)/app/drop/**'
 
           - task: AzureCLI@2
             displayName: 'Close Linked Work Items (auto-linked by commit)'
