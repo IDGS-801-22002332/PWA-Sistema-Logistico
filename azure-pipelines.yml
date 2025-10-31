@@ -101,7 +101,7 @@ stages:
               package: '$(System.ArtifactsDirectory)/app/drop'
 
           - task: AzureCLI@2
-            displayName: 'Close Deployed Work Items (31, 33, 36)'
+            displayName: 'Close Linked Work Items (auto-linked by commit)'
             condition: succeeded()
             inputs:
               azureSubscription: 'azure-devops'
@@ -109,14 +109,19 @@ stages:
               scriptLocation: 'inlineScript'
               addSpnToEnvironment: true
               inlineScript: |
-                echo "Closing specified Work Items after successful deployment..."
-                WORK_ITEM_IDS_TO_CLOSE=(31 33 36)
-                TARGET_STATE="Closed"
-                for WORK_ITEM_ID in "${WORK_ITEM_IDS_TO_CLOSE[@]}"; do
-                  echo "Updating Work Item ID: $WORK_ITEM_ID to state '$TARGET_STATE'"
-                  az boards work-item update --id $WORK_ITEM_ID --state "$TARGET_STATE" --org "$(System.TeamFoundationCollectionUri)" --project "$(System.TeamProject)" || echo "Warning: Failed to update work item $WORK_ITEM_ID."
-                done
-                echo "Finished closing work items."
+                echo "Fetching work items linked to this pipeline run..."
+                WORK_ITEMS=$(az boards query --wiql "SELECT [System.Id] FROM WorkItems WHERE [System.Links.LinkType] = 'ArtifactLink' AND [System.Title] CONTAINS '$(Build.SourceVersion)'" --org "$(System.TeamFoundationCollectionUri)" --project "$(System.TeamProject)" --output tsv || echo "")
+                if [ -z "$WORK_ITEMS" ]; then
+                  echo "No work items found linked to this build."
+                else
+                  echo "Found work items: $WORK_ITEMS"
+                  for WORK_ITEM_ID in $WORK_ITEMS; do
+                    echo "Closing Work Item ID: $WORK_ITEM_ID"
+                    az boards work-item update --id $WORK_ITEM_ID --state "Closed" --org "$(System.TeamFoundationCollectionUri)" --project "$(System.TeamProject)"
+                  done
+                fi
+                echo "Work item closing process finished."
+
 
 # ======================
 # 4️⃣ MONITOR STAGE
