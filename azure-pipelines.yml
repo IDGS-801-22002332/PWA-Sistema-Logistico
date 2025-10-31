@@ -1,5 +1,5 @@
 # ==========================================
-# PIPELINE CI/CD para Node.js + React (Vite) -> Deploy a Azure App Service
+# PIPELINE CI/CD para Node.js + React (Vite)
 # Proyecto: pwa-sistema-logistico
 # ==========================================
 
@@ -27,21 +27,23 @@ stages:
       displayName: 'Install Node.js 20'
 
     - script: |
-        echo "Node version:"
+        echo "=== Node & NPM Versions ==="
         node -v
-        echo "NPM version:"
         npm -v
 
-        echo "--- Cleaning npm cache and node_modules ---"
+        echo "=== Cleaning workspace ==="
         npm cache clean --force
-        rm -rf node_modules
+        rm -rf node_modules dist
 
-        echo "--- Installing dependencies ---"
+        echo "=== Installing dependencies ==="
         npm ci
 
-        echo "--- Running build ---"
+        echo "=== Running ESLint ==="
+        npm run lint || echo "Lint warnings ignored (no fail build)."
+
+        echo "=== Building app with Vite ==="
         npm run build
-      displayName: 'Clean, Install Dependencies and Build App'
+      displayName: 'Install, Lint and Build App'
 
     - task: PublishBuildArtifacts@1
       inputs:
@@ -64,12 +66,12 @@ stages:
       displayName: 'Install Node.js 20 (for Test)'
 
     - script: |
-        echo "--- No test script found in package.json ---"
-        echo "--- Skipping tests ---"
-      displayName: 'Skip Tests (No test configuration)'
+        echo "=== No test script found in package.json ==="
+        echo "Skipping tests..."
+      displayName: 'Skip Tests (No tests defined)'
 
 # ======================
-# 3️⃣ DEPLOY STAGE to Azure App Service
+# 3️⃣ DEPLOY STAGE (Azure App Service)
 # ======================
 - stage: Deploy
   dependsOn: Test
@@ -91,9 +93,9 @@ stages:
             displayName: 'Download Build Artifacts for Deployment'
 
           - task: AzureWebApp@1
-            displayName: 'Deploy to Azure App Service (staging)'
+            displayName: 'Deploy to Azure App Service (allenare)'
             inputs:
-              azureSubscription: 'AzureAllenareConnection'
+              azureSubscription: 'azure-devops'  # ⚠️ Asegúrate de que el nombre del service connection coincida exactamente
               appType: 'webAppLinux'
               appName: 'allenare'
               package: '$(System.ArtifactsDirectory)/app/drop'
@@ -102,7 +104,7 @@ stages:
             displayName: 'Close Deployed Work Items (31, 33, 36)'
             condition: succeeded()
             inputs:
-              azureSubscription: 'AzureAllenareConnection'
+              azureSubscription: 'azure-devops'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               addSpnToEnvironment: true
@@ -127,7 +129,7 @@ stages:
   - job: MonitorJob
     steps:
     - script: |
-        echo "--- Performing health check ---"
+        echo "=== Performing health check ==="
         curl -f -I https://allenare-fnfjg7crgyd7bqf9.canadacentral-01.azurewebsites.net || (echo "ERROR: Site unreachable or returned an error status" && exit 1)
         echo "Health check passed!"
       displayName: 'Check Deployment Health'
