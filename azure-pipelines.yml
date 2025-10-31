@@ -98,7 +98,7 @@ stages:
               azureSubscription: 'azure-devops'
               appType: 'webAppLinux'
               appName: 'CRMLogistico'
-              package: '$(System.ArtifactsDirectory)/app/drop/dist/**'
+              package: '$(System.ArtifactsDirectory)/app/drop/**'
 
 
           - task: AzureCLI@2
