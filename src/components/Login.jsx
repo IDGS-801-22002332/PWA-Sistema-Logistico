@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Truck, Mail, Lock, LogIn } from 'lucide-react';
-import './Login.css';
-=======
-// src/components/Login.jsx
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Truck, Mail, Lock, LogIn } from "lucide-react";
@@ -26,7 +18,6 @@ const STATIC_USER = {
     },
     access_token: "SIMULATED_TOKEN_FOR_MARCO"
 };
->>>>>>> 86e6bd1ca04ee0f83fa3f3cac36a000a27fd71bd
 
 const Login = () => {
     const [email, setEmail] = useState("");
