@@ -1,8 +1,25 @@
+// src/components/Login.jsx
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Truck, Mail, Lock, LogIn } from "lucide-react";
 import "./login.css";
-import { apiPost } from "../services/api";
+// import { apiPost } from "../services/api"; // Descomenta cuando vuelvas a la autenticación real
+
+// Definimos las credenciales estáticas para la simulación
+const STATIC_USER = {
+    email: "marco@gmail.com",
+    password: "12345678",
+    // Datos simulados del usuario, como si vinieran del JWT
+    user: {
+        id_usuario: 99,
+        nombre: 'Marco',
+        apellido: 'Simulado',
+        email: 'marco@gmail.com',
+        rol: 'admin',
+    },
+    access_token: "SIMULATED_TOKEN_FOR_MARCO"
+};
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -16,6 +33,36 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        // =======================================================
+        // 💡 LÓGICA TEMPORAL PARA SIMULACIÓN DE LOGIN
+        // =======================================================
+        if (email === STATIC_USER.email && password === STATIC_USER.password) {
+            
+            // Simular un retraso de red de 500ms
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+            
+            // Éxito de la simulación
+            localStorage.setItem("token", STATIC_USER.access_token);
+            localStorage.setItem("user", JSON.stringify(STATIC_USER.user));
+            
+            navigate("/panel");
+            setLoading(false); // Detener la carga antes de salir
+            return; 
+
+        } else if (email !== STATIC_USER.email && password !== STATIC_USER.password) {
+            
+            // Si el usuario intentó con otras credenciales, muestra el error estático
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+            setError("Credenciales incorrectas");
+            setLoading(false);
+            return;
+        }
+
+        // =======================================================
+        // ⚠️ LÓGICA DE API ORIGINAL (DEJA ESTO COMENTADO POR AHORA)
+        // =======================================================
+        /*
         try {
             const response = await apiPost("/login", { email, password });
 
@@ -38,6 +85,7 @@ const Login = () => {
         } finally {
             setLoading(false);
         }
+        */
     };
 
     return (
