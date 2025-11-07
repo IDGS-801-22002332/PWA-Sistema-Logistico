@@ -4,7 +4,7 @@ import { Users, Package, Truck, Settings, LogOut } from "lucide-react";
 const PanelLogistico = () => {
     return (
         <div>
-            Arriba kas chivas
+            Arriba las chivas
         </div>
     );
 };
