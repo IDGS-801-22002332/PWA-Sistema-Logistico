@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Truck, Mail, Lock, LogIn } from "lucide-react";
-import "./login.css";
+import "./Login.css";
 // import { apiPost } from "../services/api"; // Descomenta cuando vuelvas a la autenticación real
 
 // Definimos las credenciales estáticas para la simulación
