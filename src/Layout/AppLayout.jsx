@@ -1,94 +1,123 @@
-// src/layouts/AppLayout.jsx
-
+// src/layout/AppLayout.jsx
 import React from 'react';
-import { LogOut, Home, Users, Package, Map, Truck, Box } from 'lucide-react';
-// Importamos el CSS del panel, que ahora es el CSS del Layout
-import '../components/panel.css'; 
+import {
+    LogOut, Home, Users, Package, ClipboardList,
+    Truck, FileText, UserCog, DollarSign,
+    BadgeCheck
+} from 'lucide-react';
 
-// Función para obtener la información del usuario (Marco)
+import '../components/panel.css';
+
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-// Componente que envuelve la aplicación
 const AppLayout = ({ children, activeLink }) => {
-    
-    // Función para manejar el cierre de sesión
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        // Redirigir al login
-        window.location.href = '/'; 
+        window.location.href = '/';
     };
 
-    // Función auxiliar para determinar si un enlace está activo
-    const isActive = (linkPath) => activeLink === linkPath ? 'active' : '';
+    const isActive = (route) =>
+        (activeLink === route ? "nav-item active" : "nav-item");
 
     return (
         <div className="app-layout">
-            
-            {/* 1. Sidebar (Menú Lateral PERMANENTE) */}
+
+            {/* SIDEBAR */}
             <aside className="sidebar">
+
                 <div className="sidebar-header">
                     <Truck className="sidebar-logo-icon" />
-                    <span className="sidebar-logo-text">Logisys CRM</span>
+                    <span className="sidebar-logo-text">CRM Logistico</span>
                 </div>
-                
+
                 <nav className="sidebar-nav">
-                    
-                    <a href="/panel" className={`nav-item ${isActive('/panel')}`}>
+
+                    {/* INICIO */}
+                    <a href="/panel" className={isActive('/panel')}>
                         <Home className="nav-icon" />
                         <span>Inicio</span>
                     </a>
-                    
+
+                    {/* ---------------- MAESTROS ---------------- */}
                     <span className="nav-section-title">Maestros</span>
-                    <a href="/clientes" className={`nav-item ${isActive('/clientes')}`}>
+
+                    <a href="/agentes" className={isActive('/agentes')}>
+                        <BadgeCheck className="nav-icon" />
+                        <span>Agentes</span>
+                    </a>
+
+                    <a href="/clientes" className={isActive('/clientes')}>
                         <Users className="nav-icon" />
                         <span>Clientes</span>
                     </a>
-                    <a href="/proveedores" className={`nav-item ${isActive('/proveedores')}`}>
+
+                    <a href="/proveedores" className={isActive('/proveedores')}>
                         <Truck className="nav-icon" />
                         <span>Proveedores</span>
                     </a>
-                    <a href="/localizaciones" className={`nav-item ${isActive('/localizaciones')}`}>
-                        <Map className="nav-icon" />
-                        <span>Localizaciones</span>
+
+                    <a href="/tarifas" className={isActive('/tarifas')}>
+                        <DollarSign className="nav-icon" />
+                        <span>Tarifas</span>
                     </a>
 
+                    <a href="/usuarios" className={isActive('/usuarios')}>
+                        <UserCog className="nav-icon" />
+                        <span>Usuarios</span>
+                    </a>
+
+                    {/* ---------------- OPERACIONES ---------------- */}
                     <span className="nav-section-title">Operaciones</span>
-                    <a href="/pedidos" className={`nav-item ${isActive('/pedidos')}`}>
+
+                    <a href="/cotizaciones" className={isActive('/cotizaciones')}>
+                        <FileText className="nav-icon" />
+                        <span>Cotizaciones</span>
+                    </a>
+
+                    <a href="/operaciones" className={isActive('/operaciones')}>
+                        <ClipboardList className="nav-icon" />
+                        <span>Operaciones</span>
+                    </a>
+
+                    <a href="/solicitudes" className={isActive('/solicitudes')}>
                         <Package className="nav-icon" />
-                        <span>Pedidos</span>
+                        <span>Solicitudes</span>
                     </a>
-                    <a href="/inventario" className={`nav-item ${isActive('/inventario')}`}>
-                        <Box className="nav-icon" />
-                        <span>Inventario</span>
-                    </a>
+
                 </nav>
-                
+
+                {/* LOGOUT (FIJO Y NO RECORTADO) */}
                 <div className="sidebar-footer">
                     <button onClick={handleLogout} className="logout-button">
                         <LogOut className="nav-icon" />
                         <span>Cerrar Sesión</span>
                     </button>
                 </div>
+
             </aside>
 
-            {/* 2. Wrapper del Contenido Principal */}
+            {/* HEADER + CONTENIDO */}
             <div className="main-content-wrapper">
-                
-                {/* 2a. Header (Barra Superior PERMANENTE) */}
+
                 <header className="header">
-                    <h1 className="header-title">{activeLink === '/panel' ? 'Inicio / Dashboard' : 'Clientes / Listado'}</h1>
+                    <h1 className="header-title">CRM Logistico PWA</h1>
+
                     <div className="user-info">
                         <span className="user-name">Hola, {user.nombre || 'Usuario'}</span>
-                        <div className="user-avatar">{user.nombre ? user.nombre[0] : 'U'}</div>
+                        <div className="user-avatar">
+                            {user.nombre ? user.nombre[0] : 'U'}
+                        </div>
                     </div>
                 </header>
-                
-                {/* 2b. Área de Contenido DINÁMICO (Aquí se inserta Clientes o Panel) */}
+
                 <main className="main-content">
                     {children}
                 </main>
+
             </div>
+
         </div>
     );
 };
