@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2, User, Mail, Phone, MapPin, XCircle, Save, X, AlertTriangle } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
-import './clientes.css'; 
+import './clientes.css';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../services/api';
 
-export const ClientForm = ({ selectedClient, formData, handleFormChange, handleFormSubmit, closeForm }) => (
+export const ClientForm = ({
+    selectedClient,
+    formData,
+    handleFormChange,
+    handleFormSubmit,
+    closeForm
+}) => (
     <div className="client-form-card">
         <h2 className="form-card-title">
             {selectedClient ? "Editar Cliente" : "Nuevo Cliente"}
@@ -11,67 +18,93 @@ export const ClientForm = ({ selectedClient, formData, handleFormChange, handleF
 
         <form onSubmit={handleFormSubmit} className="form-content">
             <div className="form-grid">
-
-                {/* Nombre */}
                 <div className="form-group">
-                    <label className="form-label" htmlFor="nombre">Nombre Completo*</label>
+                    <label className="form-label">Nombre Empresa*</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><User size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left">
+                            <User size={20} className="input-icon" />
+                        </span>
+                        <input
                             type="text"
-                            id="nombre"
-                            name="nombre"
-                            value={formData.nombre}
+                            name="nombre_empresa"
+                            value={formData.nombre_empresa}
                             onChange={handleFormChange}
                             className="form-input with-icon"
                             required
                         />
                     </div>
                 </div>
-
-                {/* Teléfono */}
                 <div className="form-group">
-                    <label className="form-label" htmlFor="telefono">Teléfono*</label>
+                    <label className="form-label">RFC*</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><Phone size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left">
+                            <User size={20} className="input-icon" />
+                        </span>
+                        <input
+                            type="text"
+                            name="rfc"
+                            value={formData.rfc}
+                            onChange={handleFormChange}
+                            className="form-input with-icon"
+                            required
+                        />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label className="form-label">Teléfono</label>
+                    <div className="input-field-wrapper">
+                        <span className="input-icon-left">
+                            <Phone size={20} className="input-icon" />
+                        </span>
+                        <input
                             type="tel"
-                            id="telefono"
                             name="telefono"
                             value={formData.telefono}
                             onChange={handleFormChange}
                             className="form-input with-icon"
-                            required
                         />
                     </div>
                 </div>
-
-                {/* Correo */}
                 <div className="form-group">
-                    <label className="form-label" htmlFor="correo">Correo Electrónico</label>
+                    <label className="form-label">Correo</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><Mail size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left">
+                            <Mail size={20} className="input-icon" />
+                        </span>
+                        <input
                             type="email"
-                            id="correo"
-                            name="correo"
-                            value={formData.correo}
+                            name="email_contacto"
+                            value={formData.email_contacto}
                             onChange={handleFormChange}
                             className="form-input with-icon"
                         />
                     </div>
                 </div>
-
-                {/* Dirección */}
                 <div className="form-group">
-                    <label className="form-label" htmlFor="direccion">Dirección</label>
+                    <label className="form-label">Nombre del Contacto</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><MapPin size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left">
+                            <User size={20} className="input-icon" />
+                        </span>
+                        <input
                             type="text"
-                            id="direccion"
-                            name="direccion"
-                            value={formData.direccion}
+                            name="contacto_nombre"
+                            value={formData.contacto_nombre}
+                            onChange={handleFormChange}
+                            className="form-input with-icon"
+                        />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label className="form-label">Puesto del Contacto</label>
+                    <div className="input-field-wrapper">
+                        <span className="input-icon-left">
+                            <MapPin size={20} className="input-icon" />
+                        </span>
+                        <input
+                            type="text"
+                            name="contacto_puesto"
+                            value={formData.contacto_puesto}
                             onChange={handleFormChange}
                             className="form-input with-icon"
                         />
@@ -99,8 +132,7 @@ export const DeleteConfirmBanner = ({ selectedClient, deleteClient, cancel }) =>
         <div className="banner-icon-message">
             <AlertTriangle size={24} className="banner-icon" />
             <p>
-                ¿Seguro que deseas eliminar a <strong>{selectedClient?.nombre}</strong>? 
-                Esta acción no se puede deshacer.
+                ¿Seguro que deseas eliminar a <strong>{selectedClient?.nombre_empresa}</strong>?
             </p>
         </div>
 
@@ -117,10 +149,14 @@ export const DeleteConfirmBanner = ({ selectedClient, deleteClient, cancel }) =>
 );
 
 const initialFormData = {
-    nombre: '',
-    telefono: '',
-    correo: '',
-    direccion: '',
+    nombre_empresa: "",
+    rfc: "",
+    id_pais: 1,
+    id_localizacion: 1,
+    telefono: "",
+    email_contacto: "",
+    contacto_nombre: "",
+    contacto_puesto: ""
 };
 
 const Clientes = () => {
@@ -130,22 +166,45 @@ const Clientes = () => {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
     const [formData, setFormData] = useState(initialFormData);
-
     useEffect(() => {
         fetchClientes();
     }, []);
 
-    const fetchClientes = () => {
-        const data = [
-            { id_cliente: 101, nombre: "Distribuidora Alfa S.A.", telefono: "55-1234-5678", correo: "contacto@alfa.com", direccion: "Calle Falsa 123", fecha_registro: new Date(2023, 8, 10) },
-            { id_cliente: 102, nombre: "Servicios Beta Ltda.", telefono: "33-9876-5432", correo: "soporte@beta.com", direccion: "Av. Principal 456", fecha_registro: new Date(2024, 1, 5) },
-            { id_cliente: 103, nombre: "Gama Global C.V.", telefono: "81-1122-3344", correo: "ventas@gama.mx", direccion: "Blvd. Industrial 789", fecha_registro: new Date(2024, 6, 1) }
-        ];
-        setClientes(data);
+    const fetchClientes = async () => {
+        try {
+            const data = await apiGet('/clientes');
+            setClientes(data);
+        } catch (error) {
+            console.error("Error cargando clientes:", error);
+        }
     };
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (selectedClient) {
+                await apiPatch(`/clientes/${selectedClient.id_cliente}`, formData);
+            } else {
+                await apiPost('/clientes', formData);
+            }
 
-    const filteredClients = clientes.filter((client) =>
-        `${client.nombre} ${client.telefono} ${client.correo} ${client.direccion} ${client.id_cliente}`
+            fetchClientes();
+            closeForm();
+        } catch (error) {
+            console.error("Error guardando cliente", error);
+        }
+    };
+    const deleteClient = async () => {
+        try {
+            await apiDelete(`/clientes/${selectedClient.id_cliente}`);
+            fetchClientes();
+        } catch (error) {
+            console.error("Error eliminando cliente", error);
+        }
+        setIsDeleteConfirmOpen(false);
+        setSelectedClient(null);
+    };
+    const filteredClients = clientes.filter((c) =>
+        `${c.id_cliente} ${c.nombre_empresa} ${c.rfc} ${c.telefono} ${c.email_contacto}`
             .toLowerCase()
             .includes(searchTerm.toLowerCase())
     );
@@ -155,71 +214,41 @@ const Clientes = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleFormSubmit = (e) => {
-        e.preventDefault();
-
-        if (selectedClient) {
-            setClientes(clientes.map(c =>
-                c.id_cliente === selectedClient.id_cliente ? { ...c, ...formData } : c
-            ));
-        } else {
-            const newClient = {
-                ...formData,
-                id_cliente: clientes.length > 0 ? Math.max(...clientes.map(c => c.id_cliente)) + 1 : 1,
-                fecha_registro: new Date(),
-            };
-            setClientes([...clientes, newClient]);
-        }
-
-        setIsFormOpen(false);
-        setFormData(initialFormData);
-        setSelectedClient(null);
-    };
-
     const openFormForNew = () => {
         setSelectedClient(null);
         setFormData(initialFormData);
         setIsFormOpen(true);
-        setIsDeleteConfirmOpen(false);
     };
 
-    const openFormForEdit = (client) => {
-        setSelectedClient(client);
+    const openFormForEdit = (cl) => {
+        setSelectedClient(cl);
         setFormData({
-            nombre: client.nombre,
-            telefono: client.telefono,
-            correo: client.correo,
-            direccion: client.direccion,
+            nombre_empresa: cl.nombre_empresa,
+            rfc: cl.rfc,
+            id_pais: cl.id_pais ?? 1,
+            id_localizacion: cl.id_localizacion ?? 1,
+            telefono: cl.telefono ?? "",
+            email_contacto: cl.email_contacto ?? "",
+            contacto_nombre: cl.contacto_nombre ?? "",
+            contacto_puesto: cl.contacto_puesto ?? "",
         });
         setIsFormOpen(true);
-        setIsDeleteConfirmOpen(false);
     };
 
     const closeForm = () => {
         setIsFormOpen(false);
         setFormData(initialFormData);
-        setSelectedClient(null);
     };
 
-    const openDeleteConfirm = (client) => {
-        setSelectedClient(client);
+    const openDeleteConfirm = (cl) => {
+        setSelectedClient(cl);
         setIsDeleteConfirmOpen(true);
-        setIsFormOpen(false);
     };
-
-    const deleteClient = () => {
-        setClientes(clientes.filter(c => c.id_cliente !== selectedClient.id_cliente));
-        setIsDeleteConfirmOpen(false);
-        setSelectedClient(null);
-    };
-
     return (
         <AppLayout activeLink="/clientes">
-            <div className="agents-container"> {/* Reutilizo la clase principal para el layout */}
+            <div className="agents-container">
                 <h1 className="agents-title">Gestión de Clientes</h1>
-                <p className="agents-subtitle">
-                    Administración de la información de contacto y ubicación de los clientes.
-                </p>
+                <p className="agents-subtitle">Administración de la información de clientes.</p>
 
                 {/* Controles */}
                 <div className="agents-controls">
@@ -229,7 +258,7 @@ const Clientes = () => {
                         </div>
                         <input
                             type="text"
-                            placeholder="Buscar por ID, nombre, teléfono, o correo..."
+                            placeholder="Buscar por ID, nombre, RFC, teléfono..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="search-input"
@@ -241,12 +270,10 @@ const Clientes = () => {
                         className="btn btn-new-agent"
                         disabled={isFormOpen}
                     >
-                        <Plus size={20} />
-                        Nuevo Cliente
+                        <Plus size={20} /> Nuevo Cliente
                     </button>
                 </div>
 
-                {/* Formulario */}
                 {isFormOpen && (
                     <ClientForm
                         selectedClient={selectedClient}
@@ -256,8 +283,6 @@ const Clientes = () => {
                         closeForm={closeForm}
                     />
                 )}
-
-                {/* Confirmación eliminar */}
                 {isDeleteConfirmOpen && (
                     <DeleteConfirmBanner
                         selectedClient={selectedClient}
@@ -265,58 +290,51 @@ const Clientes = () => {
                         cancel={() => setIsDeleteConfirmOpen(false)}
                     />
                 )}
-
-                {/* Tabla */}
                 <div className="agents-table-wrapper">
                     <div className="table-responsive">
                         <table className="agents-table">
                             <thead className="table-header">
                                 <tr>
                                     <th className="table-th table-th-id">ID</th>
+                                    <th className="table-th">Empresa</th>
+                                    <th className="table-th">RFC</th>
+                                    <th className="table-th">Telefono</th>
+                                    <th className="table-th">Contacto</th>
                                     <th className="table-th">Nombre</th>
-                                    <th className="table-th">Teléfono</th>
-                                    <th className="table-th table-th-email">Correo</th>
-                                    <th className="table-th table-th-address">Dirección</th>
-                                    <th className="table-th table-th-actions">Acciones</th>
+                                    <th className="table-th">Acciones</th>
                                 </tr>
                             </thead>
 
                             <tbody className="table-body">
                                 {filteredClients.length > 0 ? (
-                                    filteredClients.map((client) => (
-                                        <tr key={client.id_cliente} className="table-row">
-                                            <td className="table-td table-td-id" data-label="ID:">{client.id_cliente}</td>
-                                            <td className="table-td table-td-name" data-label="Nombre:">{client.nombre}</td>
-                                            <td className="table-td" data-label="Teléfono:">
-                                                <Phone size={14} className="date-icon" /> {client.telefono}
-                                            </td>
-                                            <td className="table-td table-td-email" data-label="Correo:">{client.correo}</td>
-                                            <td className="table-td" data-label="Dirección:">{client.direccion}</td>
-                                            
-                                            <td className="table-td table-td-actions">
-                                                <div className="actions-container">
-                                                    <button
-                                                        onClick={() => openFormForEdit(client)}
-                                                        className="action-btn action-btn-edit"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit size={18} />
-                                                    </button>
+                                    filteredClients.map((c) => (
+                                        <tr key={c.id_cliente}>
+                                            <td className="table-td table-td-id" data-label="ID:">{c.id_cliente}</td>
+                                            <td className="table-td table-td-name" data-label="Nombre:">{c.nombre_empresa}</td>
+                                            <td className="table-td" data-label="Teléfono:"> {c.rfc}</td>
+                                            <td className="table-td table-td-email" data-label="Correo:">{c.telefono}</td>
+                                            <td className="table-td" data-label="Dirección:">{c.email_contacto}</td>
+                                            <td>{c.contacto_nombre}</td>
+                                            <td className="table-td-actions">
+                                                <button
+                                                    onClick={() => openFormForEdit(c)}
+                                                    className="action-btn action-btn-edit"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
 
-                                                    <button
-                                                        onClick={() => openDeleteConfirm(client)}
-                                                        className="action-btn action-btn-delete"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => openDeleteConfirm(c)}
+                                                    className="action-btn action-btn-delete"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="table-empty-state">
+                                        <td colSpan="7" className="table-empty-state">
                                             No se encontraron clientes.
                                         </td>
                                     </tr>
@@ -325,7 +343,6 @@ const Clientes = () => {
                         </table>
                     </div>
                 </div>
-
             </div>
         </AppLayout>
     );

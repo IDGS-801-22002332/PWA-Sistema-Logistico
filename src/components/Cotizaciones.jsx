@@ -1,8 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-    FileText, Building2, User, Truck, Calendar, DollarSign, MapPin,
-    List, Plus, Search, Clock, Activity, Edit, Box, Factory, Briefcase, Plane, Ship, Bus
-} from 'lucide-react';
+import { FileText, Building2, User, Truck, Calendar, DollarSign, MapPin, List, Plus, Search, Clock, Activity, Edit, Box, Factory, Briefcase, Plane, Ship, Bus} from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './cotizaciones.css'; 
 
@@ -98,10 +95,7 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
                 gridTemplateColumns: '3fr 1fr',
             }}
         >
-            {/* COLUMNA PRINCIPAL (3/4) - DETALLES */}
             <div style={{ padding: '1.5rem', borderRight: '1px solid #e5e7eb' }}>
-
-                {/* 1. HEADER DE LA TARJETA */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)', margin: 0 }}>
                         <FileText size={18} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
@@ -120,11 +114,7 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
                         {status.icon} {status.text.toUpperCase()}
                     </span>
                 </div>
-
-                {/* 2. DETALLES CLAVE EN GRID INTERNO */}
                 <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-
-                    {/* Fila 1: Cliente y Vendedor */}
                     <div className="form-group" style={{ margin: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Cliente (Creada: {cotizacion.fecha_creacion})</label>
                         <p style={{ margin: 0, fontWeight: 600 }}><Building2 size={14} style={{ verticalAlign: 'middle', marginRight: '5px' }} />{cotizacion.cliente_nombre}</p>
@@ -134,8 +124,6 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Vendedor</label>
                         <p style={{ margin: 0, fontSize: '0.95rem' }}><User size={14} style={{ verticalAlign: 'middle', marginRight: '5px' }} />{cotizacion.usuario_ventas_nombre}</p>
                     </div>
-
-                    {/* Fila 2: Servicio, Carga, Ruta */}
                     <div className="form-group" style={{ margin: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Servicio ({cotizacion.incoterm})</label>
                         <p style={{ margin: 0 }}>
@@ -151,8 +139,6 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Ruta</label>
                         <p style={{ margin: 0, fontWeight: 600 }}><MapPin size={14} style={{ verticalAlign: 'middle', marginRight: '5px', color: 'var(--primary)' }} />{cotizacion.origen_nombre} → {cotizacion.destino_nombre}</p>
                     </div>
-
-                    {/* Fila 3: Proveedor y Agente */}
                     <div className="form-group" style={{ margin: 0, marginTop: '1rem' }}>
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Proveedor</label>
                         <p style={{ margin: 0, fontSize: '0.95rem' }}><Factory size={14} style={{ verticalAlign: 'middle', marginRight: '5px' }} />{cotizacion.proveedor_nombre}</p>
@@ -164,18 +150,12 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
 
                 </div>
             </div>
-
-            {/* COLUMNA LATERAL (1/4) - RESUMEN RÁPIDO Y ACCIONES */}
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center' }}>
-
-                {/* Resumen Financiero Rápido */}
                 <div style={{ textAlign: 'center', width: '100%', marginBottom: '1rem' }}>
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>Total Cotizado</label>
                     <p style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--success)', margin: '0.2rem 0 0.5rem' }}>
                         {cotizacion.moneda} {cotizacion.precio_final.toFixed(2)}
                     </p>
-
-                    {/* Indicadores de Vigencia y ETA */}
                     <div style={{ fontSize: '0.9rem', color: 'var(--danger)', fontWeight: 600 }}>
                         <Calendar size={14} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
                         Vence: {cotizacion.fecha_vigencia}
@@ -185,8 +165,6 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
                         ETA: {cotizacion.fecha_estimada_arribo || 'N/A'}
                     </div>
                 </div>
-
-                {/* Botones de Acción */}
                 <div className="form-actions" style={{ paddingTop: '0', borderTop: 'none', justifyContent: 'center', gap: '0.5rem' }}>
                     <button className="btn btn-secondary" onClick={() => onAction('view', cotizacion)} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
                         <List size={18} /> Ver Detalle
@@ -226,8 +204,6 @@ const Cotizaciones = () => {
     return (
         <AppLayout activeLink="/cotizaciones">
             <div className="agents-container">
-
-                {/* HEADER Y CONTROLES */}
                 <h1 className="agents-title">
                     Listado General de Cotizaciones
                 </h1>

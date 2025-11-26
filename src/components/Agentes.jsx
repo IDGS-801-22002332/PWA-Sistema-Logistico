@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2, Clock, User, Mail, Briefcase, XCircle, Save, X, AlertTriangle } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './agentes.css';
+import { apiGet, apiPost } from '../services/api'; 
+import api from '../services/api';                 
 
 export const AgentForm = ({ selectedAgent, formData, handleFormChange, handleFormSubmit, closeForm }) => (
     <div className="agent-form-card">
@@ -12,7 +14,6 @@ export const AgentForm = ({ selectedAgent, formData, handleFormChange, handleFor
         <form onSubmit={handleFormSubmit} className="form-content">
             <div className="form-grid">
 
-                {/* Nombre */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="nombre">Nombre*</label>
                     <div className="input-field-wrapper">
@@ -29,7 +30,6 @@ export const AgentForm = ({ selectedAgent, formData, handleFormChange, handleFor
                     </div>
                 </div>
 
-                {/* Apellido */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="apellido">Apellido*</label>
                     <div className="input-field-wrapper">
@@ -46,7 +46,6 @@ export const AgentForm = ({ selectedAgent, formData, handleFormChange, handleFor
                     </div>
                 </div>
 
-                {/* Email */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="email">Email*</label>
                     <div className="input-field-wrapper">
@@ -63,7 +62,6 @@ export const AgentForm = ({ selectedAgent, formData, handleFormChange, handleFor
                     </div>
                 </div>
 
-                {/* Tipo */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="tipo_agente">Tipo de Agente*</label>
                     <div className="select-wrapper">
@@ -75,9 +73,9 @@ export const AgentForm = ({ selectedAgent, formData, handleFormChange, handleFor
                             className="form-select"
                             required
                         >
-                            <option value="vendedor">Vendedor</option>
-                            <option value="logistica">Logística</option>
-                            <option value="administrativo">Administrativo</option>
+                            <option value="aduanal">Aduanal</option>
+                            <option value="carga">Carga</option>
+                            <option value="seguros">Seguros</option>
                         </select>
                         <Briefcase size={20} className="select-arrow" />
                     </div>
@@ -125,7 +123,7 @@ const initialFormData = {
     nombre: '',
     apellido: '',
     email: '',
-    tipo_agente: 'vendedor',
+    tipo_agente: 'aduanal',
 };
 
 const Agentes = () => {
@@ -140,13 +138,45 @@ const Agentes = () => {
         fetchAgentes();
     }, []);
 
-    const fetchAgentes = () => {
-        const data = [
-            { id_agente: 1, nombre: "Carlos", apellido: "Ramírez", email: "carlos@empresa.com", tipo_agente: "vendedor", fecha_creacion: new Date(2023, 10, 15) },
-            { id_agente: 2, nombre: "Laura", apellido: "Martínez", email: "laura@empresa.com", tipo_agente: "logistica", fecha_creacion: new Date(2024, 0, 2) },
-            { id_agente: 3, nombre: "Pedro", apellido: "Sánchez", email: "pedro@empresa.com", tipo_agente: "administrativo", fecha_creacion: new Date(2024, 5, 20) }
-        ];
-        setAgentes(data);
+    const fetchAgentes = async () => {
+        try {
+            const data = await apiGet('/agentes');
+            setAgentes(data);
+        } catch (error) {
+            console.error("Error cargando agentes", error);
+        }
+    };
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+            if (selectedAgent) {
+                const updated = await api.apiPost(`/agentes/${selectedAgent.id_agente}`, formData, {
+                    method: 'PATCH'
+                });
+            } else {
+                await apiPost('/agentes', formData);
+            }
+
+            fetchAgentes();
+            setIsFormOpen(false);
+            setFormData(initialFormData);
+            setSelectedAgent(null);
+        } catch (error) {
+            console.error("Error guardando agente", error);
+        }
+    };
+
+    const deleteAgent = async () => {
+        try {
+            await api.apiPost(`/agentes/${selectedAgent.id_agente}`, {}, { method: 'DELETE' });
+            fetchAgentes();
+        } catch (error) {
+            console.error("Error eliminando", error);
+        }
+        setIsDeleteConfirmOpen(false);
+        setSelectedAgent(null);
     };
 
     const filteredAgents = agentes.filter((agent) =>
@@ -157,28 +187,7 @@ const Agentes = () => {
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleFormSubmit = (e) => {
-        e.preventDefault();
-
-        if (selectedAgent) {
-            setAgentes(agentes.map(a =>
-                a.id_agente === selectedAgent.id_agente ? { ...a, ...formData } : a
-            ));
-        } else {
-            const newAgent = {
-                ...formData,
-                id_agente: agentes.length > 0 ? Math.max(...agentes.map(a => a.id_agente)) + 1 : 1,
-                fecha_creacion: new Date(),
-            };
-            setAgentes([...agentes, newAgent]);
-        }
-
-        setIsFormOpen(false);
-        setFormData(initialFormData);
-        setSelectedAgent(null);
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const openFormForNew = () => {
@@ -212,26 +221,20 @@ const Agentes = () => {
         setIsFormOpen(false);
     };
 
-    const deleteAgent = () => {
-        setAgentes(agentes.filter(a => a.id_agente !== selectedAgent.id_agente));
-        setIsDeleteConfirmOpen(false);
-        setSelectedAgent(null);
-    };
-
     const getAgentTypeLabel = (tipo) => {
         switch (tipo) {
-            case "vendedor": return "Vendedor";
-            case "logistica": return "Logística";
-            case "administrativo": return "Administrativo";
+            case "aduanal": return "Aduanal";
+            case "carga": return "Carga";
+            case "seguros": return "Seguros";
             default: return "Otro";
         }
     };
 
     const getTypeColorClass = (tipo) => {
         switch (tipo) {
-            case "vendedor": return "agent-type-tag ventas";
-            case "logistica": return "agent-type-tag logistica";
-            case "administrativo": return "agent-type-tag administracion";
+            case "aduanal": return "agent-type-tag ventas";
+            case "carga": return "agent-type-tag logistica";
+            case "seguros": return "agent-type-tag administracion";
             default: return "agent-type-tag";
         }
     };
@@ -241,10 +244,9 @@ const Agentes = () => {
             <div className="agents-container">
                 <h1 className="agents-title">Gestión de Agentes</h1>
                 <p className="agents-subtitle">
-                    Administración centralizada del personal de ventas, soporte, logística y administración.
+                    Administración centralizada del personal.
                 </p>
 
-                {/* Controles */}
                 <div className="agents-controls">
                     <div className="search-bar-wrapper">
                         <div className="search-icon-left">
@@ -269,7 +271,6 @@ const Agentes = () => {
                     </button>
                 </div>
 
-                {/* Formulario */}
                 {isFormOpen && (
                     <AgentForm
                         selectedAgent={selectedAgent}
@@ -280,7 +281,6 @@ const Agentes = () => {
                     />
                 )}
 
-                {/* Confirmación eliminar */}
                 {isDeleteConfirmOpen && (
                     <DeleteConfirmBanner
                         selectedAgent={selectedAgent}
@@ -289,7 +289,6 @@ const Agentes = () => {
                     />
                 )}
 
-                {/* Tabla */}
                 <div className="agents-table-wrapper">
                     <div className="table-responsive">
                         <table className="agents-table">
@@ -307,7 +306,7 @@ const Agentes = () => {
                             <tbody className="table-body">
                                 {filteredAgents.length > 0 ? (
                                     filteredAgents.map((agent) => (
-                                        <tr key={agent.id_agente} className="table-row">
+                                        <tr key={agent.id_agente}>
                                             <td className="table-td table-td-id" data-label="ID:">{agent.id_agente}</td>
                                             <td className="table-td table-td-name" data-label="Nombre:">{agent.nombre} {agent.apellido}</td>
                                             <td className="table-td table-td-email" data-label="Email:">{agent.email}</td>
@@ -316,28 +315,23 @@ const Agentes = () => {
                                                     {getAgentTypeLabel(agent.tipo_agente)}
                                                 </span>
                                             </td>
-                                            <td className="table-td table-td-date" data-label="Creado:">
+                                            <td>
                                                 <Clock size={14} className="date-icon" />
-                                                {agent.fecha_creacion.toLocaleDateString()}
+                                                {new Date(agent.fecha_creacion).toLocaleDateString()}
                                             </td>
-                                            <td className="table-td table-td-actions">
-                                                <div className="actions-container">
-                                                    <button
-                                                        onClick={() => openFormForEdit(agent)}
-                                                        className="action-btn action-btn-edit"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit size={18} />
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => openDeleteConfirm(agent)}
-                                                        className="action-btn action-btn-delete"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
+                                            <td>
+                                                <button
+                                                    onClick={() => openFormForEdit(agent)}
+                                                    className="action-btn action-btn-edit"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => openDeleteConfirm(agent)}
+                                                    className="action-btn action-btn-delete"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))

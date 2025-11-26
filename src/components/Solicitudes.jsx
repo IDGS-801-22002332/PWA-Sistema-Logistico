@@ -1,8 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-    MessageSquare, Building2, Calendar, MapPin, Package,
-    List, Plus, Search, Ship, Plane, Bus, FileText, DollarSign, Clock
-} from 'lucide-react';
+import { MessageSquare, Building2, Calendar, MapPin, Package, List, Plus, Search, Ship, Plane, Bus, FileText, DollarSign, Clock } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './solicitudes.css'; 
 

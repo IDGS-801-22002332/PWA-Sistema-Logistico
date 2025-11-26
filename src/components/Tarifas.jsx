@@ -1,12 +1,23 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, Tag, Truck, Box, DollarSign, Calendar, MapPin, Map, XCircle, Save, X, AlertTriangle, ChevronsUpDown } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Tag, Truck, DollarSign, Calendar, MapPin, XCircle, Save, X, AlertTriangle, ChevronsUpDown } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './tarifas.css';
+import { apiGet, apiPost, apiPut, apiDelete } from '../services/api';
+import { useProveedores } from '../hooks/useProveedores';
 
-const TipoServicio = {
-    MARITIMO: 'Marítimo',
-    AEREO: 'Aéreo',
-    TERRESTRE: 'Terrestre',
+const mockLocalizaciones = [
+    { id: 101, nombre: "Puerto de Veracruz, MX" },
+    { id: 102, nombre: "Aeropuerto JFK, US" },
+    { id: 103, nombre: "Shenzhen, CN" },
+    { id: 104, nombre: "Ciudad de México, MX" },
+];
+
+const TipoServicioBackend = {
+    maritimo: 'Marítimo',
+    aereo: 'Aéreo',
+    terrestre: 'Terrestre',
+    ultima_milla: 'Última Milla',
+    domestico: 'Doméstico',
 };
 
 const TipoCarga = {
@@ -21,20 +32,6 @@ const Incoterm = {
     CIF: 'CIF (Cost, Insurance and Freight)',
     DDP: 'DDP (Delivered Duty Paid)',
 };
-
-const mockProveedores = [
-    { id: 501, nombre: "Materiales Súper S.A." },
-    { id: 502, nombre: "Tecnología Global" },
-    { id: 503, nombre: "Logística Rápida" },
-];
-
-const mockLocalizaciones = [
-    { id: 101, nombre: "Puerto de Veracruz, MX" },
-    { id: 102, nombre: "Aeropuerto JFK, US" },
-    { id: 103, nombre: "Shenzhen, CN" },
-    { id: 104, nombre: "Ciudad de México, MX" },
-];
-
 const initialFormData = {
     id_proveedor: '',
     tipo_servicio: '',
@@ -48,7 +45,36 @@ const initialFormData = {
     fecha_vigencia_fin: '',
 };
 
-export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleFormSubmit, closeForm }) => {
+export const DeleteConfirmBanner = ({ selectedTarifa, deleteTarifa, cancel }) => (
+    <div className="delete-confirm-banner">
+        <div className="banner-icon-message">
+            <AlertTriangle size={24} className="banner-icon" />
+            <p>
+                ¿Seguro que deseas eliminar a <strong>{selectedTarifa?.tipo_servicio}</strong>?  
+                Esta acción no se puede deshacer.
+            </p>
+        </div>
+
+        <div className="banner-actions">
+            <button className="btn btn-secondary" onClick={cancel}>
+                <XCircle size={18} /> Cancelar
+            </button>
+
+            <button className="btn btn-danger" onClick={deleteTarifa}>
+                <Trash2 size={18} /> Confirmar Eliminación
+            </button>
+        </div>
+    </div>
+);
+export const TarifaForm = ({
+    selectedTarifa,
+    formData,
+    handleFormChange,
+    handleFormSubmit,
+    closeForm,
+    proveedores,
+    localizaciones,
+}) => {
 
     const renderEnumOptions = (enumObject) => (
         Object.entries(enumObject).map(([key, value]) => (
@@ -70,8 +96,6 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
 
             <form onSubmit={handleFormSubmit} className="form-content">
                 <div className="form-grid">
-
-                    {/* Fila 1: Proveedor y Servicio */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="id_proveedor">Proveedor*</label>
                         <div className="select-wrapper">
@@ -84,12 +108,11 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                                 required
                             >
                                 <option value="" disabled>Seleccione proveedor...</option>
-                                {renderMasterOptions(mockProveedores)}
+                                {renderMasterOptions(proveedores)}
                             </select>
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
                     </div>
-
                     <div className="form-group">
                         <label className="form-label" htmlFor="tipo_servicio">Tipo de Servicio*</label>
                         <div className="select-wrapper">
@@ -102,13 +125,11 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                                 required
                             >
                                 <option value="" disabled>Seleccione servicio...</option>
-                                {renderEnumOptions(TipoServicio)}
+                                {renderEnumOptions(TipoServicioBackend)}
                             </select>
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
                     </div>
-
-                    {/* Fila 2: Origen y Destino */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="id_origen_localizacion">Origen*</label>
                         <div className="select-wrapper">
@@ -121,7 +142,7 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                                 required
                             >
                                 <option value="" disabled>Seleccione origen...</option>
-                                {renderMasterOptions(mockLocalizaciones)}
+                                {renderMasterOptions(localizaciones)}
                             </select>
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
@@ -139,13 +160,11 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                                 required
                             >
                                 <option value="" disabled>Seleccione destino...</option>
-                                {renderMasterOptions(mockLocalizaciones)}
+                                {renderMasterOptions(localizaciones)}
                             </select>
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
                     </div>
-
-                    {/* Fila 3: Carga e Incoterm */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="tipo_carga">Tipo de Carga*</label>
                         <div className="select-wrapper">
@@ -163,7 +182,6 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
                     </div>
-
                     <div className="form-group">
                         <label className="form-label" htmlFor="incoterm">Incoterm*</label>
                         <div className="select-wrapper">
@@ -181,8 +199,6 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
                     </div>
-
-                    {/* Fila 4: Precio y Moneda */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="precio_base">Precio Base*</label>
                         <div className="input-field-wrapper">
@@ -199,7 +215,6 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                             />
                         </div>
                     </div>
-
                     <div className="form-group">
                         <label className="form-label" htmlFor="moneda">Moneda*</label>
                         <div className="input-field-wrapper">
@@ -215,8 +230,6 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                             />
                         </div>
                     </div>
-
-                    {/* Fila 5: Vigencia (Full width en móvil, 2 columnas en desktop) */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="fecha_vigencia_inicio">Vigencia Inicio*</label>
                         <div className="input-field-wrapper">
@@ -248,9 +261,7 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
                             />
                         </div>
                     </div>
-
                 </div>
-
                 <div className="form-actions">
                     <button type="button" className="btn btn-secondary" onClick={closeForm}>
                         <X size={20} /> Cancelar
@@ -266,7 +277,6 @@ export const TarifaForm = ({ selectedTarifa, formData, handleFormChange, handleF
     );
 };
 
-
 const Tarifas = () => {
     const [tarifas, setTarifas] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -274,45 +284,97 @@ const Tarifas = () => {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedTarifa, setSelectedTarifa] = useState(null);
     const [formData, setFormData] = useState(initialFormData);
+    const [loadingTarifas, setLoadingTarifas] = useState(true);
+    const [errorTarifas, setErrorTarifas] = useState(null);
+
+    const { proveedores, loading: loadingProveedores, error: errorProveedores } = useProveedores();
+
+    const localizaciones = mockLocalizaciones;
+    const TARIFA_ENDPOINT = '/tarifas';
+    const ID_KEY = 'id_tarifa';
+
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    const fetchTarifas = async () => {
+        setLoadingTarifas(true);
+        setErrorTarifas(null);
+        try {
+            const data = await apiGet(TARIFA_ENDPOINT);
+            setTarifas(data);
+        } catch (err) {
+            console.error("Error al obtener tarifas:", err);
+            setErrorTarifas("Error al cargar las tarifas. Verifica tu conexión y la API.");
+        } finally {
+            setLoadingTarifas(false);
+        }
+    };
 
     useEffect(() => {
         fetchTarifas();
     }, []);
 
-    const fetchTarifas = () => {
-        const data = [
-            { id_tarifa: 1001, id_proveedor: 501, tipo_servicio: 'MARITIMO', tipo_carga: 'FCL', id_origen_localizacion: 103, id_destino_localizacion: 101, incoterm: 'FOB', precio_base: '1500.00', moneda: 'USD', fecha_vigencia_inicio: '2025-01-01', fecha_vigencia_fin: '2025-12-31' },
-            { id_tarifa: 1002, id_proveedor: 503, tipo_servicio: 'AEREO', tipo_carga: 'CARGA_SUELTA', id_origen_localizacion: 102, id_destino_localizacion: 104, incoterm: 'DDP', precio_base: '0.85', moneda: 'USD/Kg', fecha_vigencia_inicio: '2025-03-01', fecha_vigencia_fin: '2025-06-30' },
-        ];
-        setTarifas(data);
-    };
-
-    const getProveedorName = (id) => mockProveedores.find(p => p.id === parseInt(id))?.nombre || 'N/A';
-    const getLocationName = (id) => mockLocalizaciones.find(l => l.id === parseInt(id))?.nombre || 'N/A';
+    const getProveedorName = (id) => proveedores.find(p => p.id === parseInt(id))?.nombre || 'N/A';
+    const getLocationName = (id) => localizaciones.find(l => l.id === parseInt(id))?.nombre || 'N/A';
 
     const filteredTarifas = useMemo(() => {
         return tarifas.filter((tarifa) =>
-            `${tarifa.id_tarifa} ${getProveedorName(tarifa.id_proveedor)} ${tarifa.tipo_servicio} ${tarifa.tipo_carga} ${tarifa.incoterm} ${tarifa.precio_base} ${tarifa.moneda}`
+            `${tarifa[ID_KEY]} ${getProveedorName(tarifa.id_proveedor)} ${tarifa.tipo_servicio} ${tarifa.tipo_carga} ${tarifa.incoterm} ${tarifa.precio_base} ${tarifa.moneda}`
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase())
         );
-    }, [tarifas, searchTerm]);
-
-
-    const handleFormChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleFormSubmit = (e) => {
+    }, [tarifas, searchTerm, proveedores]);
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
 
-        setIsFormOpen(false);
-        setFormData(initialFormData);
-        setSelectedTarifa(null);
-        fetchTarifas();
-    };
+        try {
+            const proveedorId = parseInt(formData.id_proveedor, 10);
+            const origenId = parseInt(formData.id_origen_localizacion, 10);
+            const destinoId = parseInt(formData.id_destino_localizacion, 10);
 
+            if (isNaN(proveedorId) || isNaN(origenId) || isNaN(destinoId)) {
+                throw new Error("Debe seleccionar un Proveedor, Origen y Destino válidos.");
+            }
+
+            const dataToSend = {
+                id_proveedor: proveedorId,
+                id_origen_localizacion: origenId,
+                id_destino_localizacion: destinoId,
+
+                tipo_servicio: formData.tipo_servicio,
+                tipo_carga: formData.tipo_carga,
+                incoterm: formData.incoterm,
+                precio_base: String(formData.precio_base),
+                moneda: formData.moneda,
+                fecha_vigencia_inicio: formData.fecha_vigencia_inicio,
+                fecha_vigencia_fin: formData.fecha_vigencia_fin,
+            };
+
+            if (selectedTarifa) {
+                await apiPut(`${TARIFA_ENDPOINT}/${selectedTarifa[ID_KEY]}`, dataToSend);
+            } else {
+                await apiPost(TARIFA_ENDPOINT, dataToSend);
+            }
+
+            closeForm();
+            await fetchTarifas();
+        } catch (err) {
+            console.error("Error al guardar tarifa:", err);
+            let errorMessage = "Ocurrió un error desconocido al guardar la tarifa.";
+            if (err.response?.message) {
+                errorMessage = Array.isArray(err.response.message) ? err.response.message.join(', ') : err.response.message;
+            } else if (err.message) {
+                errorMessage = `Error: ${err.message}`;
+            }
+
+            alert(`Error al guardar la tarifa: ${errorMessage}`);
+        }
+    };
     const openFormForNew = () => {
         setSelectedTarifa(null);
         setFormData(initialFormData);
@@ -323,16 +385,16 @@ const Tarifas = () => {
     const openFormForEdit = (tarifa) => {
         setSelectedTarifa(tarifa);
         setFormData({
-            id_proveedor: tarifa.id_proveedor,
+            id_proveedor: String(tarifa.id_proveedor),
             tipo_servicio: tarifa.tipo_servicio,
             tipo_carga: tarifa.tipo_carga,
-            id_origen_localizacion: tarifa.id_origen_localizacion,
-            id_destino_localizacion: tarifa.id_destino_localizacion,
+            id_origen_localizacion: String(tarifa.id_origen_localizacion),
+            id_destino_localizacion: String(tarifa.id_destino_localizacion),
             incoterm: tarifa.incoterm,
-            precio_base: tarifa.precio_base,
+            precio_base: String(tarifa.precio_base),
             moneda: tarifa.moneda,
-            fecha_vigencia_inicio: tarifa.fecha_vigencia_inicio,
-            fecha_vigencia_fin: tarifa.fecha_vigencia_fin,
+            fecha_vigencia_inicio: tarifa.fecha_vigencia_inicio.substring(0, 10),
+            fecha_vigencia_fin: tarifa.fecha_vigencia_fin.substring(0, 10),
         });
         setIsFormOpen(true);
         setIsDeleteConfirmOpen(false);
@@ -349,12 +411,40 @@ const Tarifas = () => {
         setIsDeleteConfirmOpen(true);
         setIsFormOpen(false);
     };
+    const deleteTarifa = async () => {
+        if (!selectedTarifa) return;
 
-    const deleteTarifa = () => {
-        setTarifas(tarifas.filter(t => t.id_tarifa !== selectedTarifa.id_tarifa));
-        setIsDeleteConfirmOpen(false);
-        setSelectedTarifa(null);
+        try {
+            await apiDelete(`${TARIFA_ENDPOINT}/${selectedTarifa[ID_KEY]}`);
+
+            setIsDeleteConfirmOpen(false);
+            setSelectedTarifa(null);
+            await fetchTarifas();
+        } catch (err) {
+            console.error("Error al eliminar tarifa:", err);
+            alert(`Error al eliminar la tarifa: ${err.response?.message || err.message}`);
+        }
     };
+    if (loadingTarifas || loadingProveedores) {
+        return (
+            <AppLayout activeLink="/tarifas">
+                <div className="agents-container">
+                    <h1 className="agents-title">Catálogo de Tarifas</h1>
+                </div>
+            </AppLayout>
+        );
+    }
+
+    if (errorTarifas || errorProveedores) {
+        return (
+            <AppLayout activeLink="/tarifas">
+                <div className="agents-container">
+                    <h1 className="agents-title">Catálogo de Tarifas</h1>
+                    <p className="error-message">Error al cargar datos: {errorTarifas || errorProveedores}</p>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout activeLink="/tarifas">
@@ -363,8 +453,6 @@ const Tarifas = () => {
                 <p className="agents-subtitle">
                     Administración de tarifas base de transporte por proveedor, ruta y tipo de servicio.
                 </p>
-
-                {/* Controles */}
                 <div className="agents-controls">
                     <div className="search-bar-wrapper">
                         <div className="search-icon-left">
@@ -388,8 +476,6 @@ const Tarifas = () => {
                         Nueva Tarifa
                     </button>
                 </div>
-
-                {/* Formulario */}
                 {isFormOpen && (
                     <TarifaForm
                         selectedTarifa={selectedTarifa}
@@ -397,19 +483,17 @@ const Tarifas = () => {
                         handleFormChange={handleFormChange}
                         handleFormSubmit={handleFormSubmit}
                         closeForm={closeForm}
+                        proveedores={proveedores}
+                        localizaciones={localizaciones}
                     />
                 )}
-
-                {/* Confirmación eliminar */}
                 {isDeleteConfirmOpen && (
                     <DeleteConfirmBanner
-                        selectedProveedor={selectedTarifa}
-                        deleteProveedor={deleteTarifa}
+                        selectedTarifa={selectedTarifa}
+                        deleteTarifa={deleteTarifa}
                         cancel={() => setIsDeleteConfirmOpen(false)}
                     />
                 )}
-
-                {/* Tabla */}
                 <div className="agents-table-wrapper">
                     <div className="table-responsive">
                         <table className="agents-table">
@@ -429,15 +513,15 @@ const Tarifas = () => {
                             <tbody className="table-body">
                                 {filteredTarifas.length > 0 ? (
                                     filteredTarifas.map((tarifa) => (
-                                        <tr key={tarifa.id_tarifa} className="table-row">
-                                            <td className="table-td table-td-id" data-label="ID:">{tarifa.id_tarifa}</td>
+                                        <tr key={tarifa[ID_KEY]} className="table-row">
+                                            <td className="table-td table-td-id" data-label="ID:">{tarifa[ID_KEY]}</td>
                                             <td className="table-td table-td-name" data-label="Proveedor:">{getProveedorName(tarifa.id_proveedor)}</td>
                                             <td className="table-td" data-label="Ruta:">
                                                 <MapPin size={16} style={{ verticalAlign: 'middle', marginRight: '5px', color: '#6b7280' }} />
                                                 {getLocationName(tarifa.id_origen_localizacion)} - {getLocationName(tarifa.id_destino_localizacion)}
                                             </td>
                                             <td className="table-td" data-label="Servicio/Carga:">
-                                                **{TipoServicio[tarifa.tipo_servicio]}**<br />
+                                                **{TipoServicioBackend[tarifa.tipo_servicio] || tarifa.tipo_servicio}**<br />
                                                 <span className="table-td-email">{TipoCarga[tarifa.tipo_carga]}</span>
                                             </td>
                                             <td className="table-td" data-label="Incoterm:">{Incoterm[tarifa.incoterm]}</td>
@@ -445,7 +529,7 @@ const Tarifas = () => {
                                                 **{tarifa.precio_base}** {tarifa.moneda}
                                             </td>
                                             <td className="table-td table-td-date" data-label="Vigencia:">
-                                                {tarifa.fecha_vigencia_inicio} a {tarifa.fecha_vigencia_fin}
+                                                {tarifa.fecha_vigencia_inicio.substring(0, 10)} a {tarifa.fecha_vigencia_fin.substring(0, 10)}
                                             </td>
 
                                             <td className="table-td table-td-actions">

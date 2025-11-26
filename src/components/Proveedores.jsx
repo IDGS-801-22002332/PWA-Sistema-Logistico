@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2, Box, Mail, Phone, MapPin, XCircle, Save, X, AlertTriangle, Hash } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
-import './proveedores.css'; 
+import './proveedores.css';
+import { apiGet, apiPost } from '../services/api';
 
 export const ProveedorForm = ({ selectedProveedor, formData, handleFormChange, handleFormSubmit, closeForm }) => (
     <div className="proveedor-form-card">
@@ -12,12 +13,11 @@ export const ProveedorForm = ({ selectedProveedor, formData, handleFormChange, h
         <form onSubmit={handleFormSubmit} className="form-content">
             <div className="form-grid">
 
-                {/* Nombre/Razón Social */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="nombre">Razón Social/Nombre*</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><Box size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left"><Box size={20} className="input-icon" /></span>
+                        <input
                             type="text"
                             id="nombre"
                             name="nombre"
@@ -29,12 +29,11 @@ export const ProveedorForm = ({ selectedProveedor, formData, handleFormChange, h
                     </div>
                 </div>
 
-                {/* RFC/ID Fiscal */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="rfc">RFC/ID Fiscal*</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><Hash size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left"><Hash size={20} className="input-icon" /></span>
+                        <input
                             type="text"
                             id="rfc"
                             name="rfc"
@@ -46,12 +45,11 @@ export const ProveedorForm = ({ selectedProveedor, formData, handleFormChange, h
                     </div>
                 </div>
 
-                {/* Teléfono */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="telefono">Teléfono</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><Phone size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left"><Phone size={20} className="input-icon" /></span>
+                        <input
                             type="tel"
                             id="telefono"
                             name="telefono"
@@ -62,12 +60,11 @@ export const ProveedorForm = ({ selectedProveedor, formData, handleFormChange, h
                     </div>
                 </div>
 
-                {/* Correo de Contacto */}
                 <div className="form-group">
                     <label className="form-label" htmlFor="correo">Correo de Contacto*</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><Mail size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left"><Mail size={20} className="input-icon" /></span>
+                        <input
                             type="email"
                             id="correo"
                             name="correo"
@@ -78,13 +75,12 @@ export const ProveedorForm = ({ selectedProveedor, formData, handleFormChange, h
                         />
                     </div>
                 </div>
-                
-                {/* Dirección */}
+
                 <div className="form-group span-full">
                     <label className="form-label" htmlFor="direccion">Dirección Fiscal/Principal</label>
                     <div className="input-field-wrapper">
-                        <span className="input-icon-left"><MapPin size={20} className="input-icon"/></span>
-                        <input 
+                        <span className="input-icon-left"><MapPin size={20} className="input-icon" /></span>
+                        <input
                             type="text"
                             id="direccion"
                             name="direccion"
@@ -116,7 +112,7 @@ export const DeleteConfirmBanner = ({ selectedProveedor, deleteProveedor, cancel
         <div className="banner-icon-message">
             <AlertTriangle size={24} className="banner-icon" />
             <p>
-                ¿Seguro que deseas eliminar a <strong>{selectedProveedor?.nombre}</strong> (ID: {selectedProveedor?.id_proveedor})? 
+                ¿Seguro que deseas eliminar a <strong>{selectedProveedor?.nombre}</strong> (ID: {selectedProveedor?.id_proveedor})?
                 Esta acción no se puede deshacer.
             </p>
         </div>
@@ -152,14 +148,22 @@ const Proveedores = () => {
     useEffect(() => {
         fetchProveedores();
     }, []);
-
-    const fetchProveedores = () => {
-        const data = [
-            { id_proveedor: 501, nombre: "Materiales Súper S.A.", rfc: "MSS-980101-ABC", telefono: "55-4000-1234", correo: "ventas@materiales-super.com", direccion: "Calle Abasto 10", fecha_registro: new Date(2023, 8, 1) },
-            { id_proveedor: 502, nombre: "Tecnología Global", rfc: "TGL-050505-XYZ", telefono: "33-7890-5678", correo: "contacto@techglobal.com", direccion: "Av. Innovación 200", fecha_registro: new Date(2024, 0, 15) },
-            { id_proveedor: 503, nombre: "Logística Rápida", rfc: "LGR-121212-DEF", telefono: "81-1010-2020", correo: "soporte@logistica-rapida.net", direccion: "Carretera Sur Km 5", fecha_registro: new Date(2024, 4, 1) }
-        ];
-        setProveedores(data);
+    const fetchProveedores = async () => {
+        try {
+            const data = await apiGet('/proveedores');
+            const mapped = data.map(p => ({
+                id_proveedor: p.id_proveedor,
+                nombre: p.nombre_empresa,
+                rfc: p.rfc,
+                telefono: p.telefono,
+                correo: p.email_contacto,
+                direccion: p.contacto_nombre,
+                fecha_registro: p.fecha_creacion,
+            }));
+            setProveedores(mapped);
+        } catch (err) {
+            console.error("Error obteniendo proveedores", err);
+        }
     };
 
     const filteredProveedores = proveedores.filter((proveedor) =>
@@ -172,26 +176,32 @@ const Proveedores = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
-
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
 
-        if (selectedProveedor) {
-            setProveedores(proveedores.map(p =>
-                p.id_proveedor === selectedProveedor.id_proveedor ? { ...p, ...formData } : p
-            ));
-        } else {
-            const newProveedor = {
-                ...formData,
-                id_proveedor: proveedores.length > 0 ? Math.max(...proveedores.map(p => p.id_proveedor)) + 1 : 1,
-                fecha_registro: new Date(),
-            };
-            setProveedores([...proveedores, newProveedor]);
-        }
+        const body = {
+            nombre_empresa: formData.nombre,
+            rfc: formData.rfc,
+            telefono: formData.telefono,
+            email_contacto: formData.correo,
+            contacto_nombre: formData.direccion,
+            tipo_servicio_ofrecido: "terrestre"
+        };
 
-        setIsFormOpen(false);
-        setFormData(initialFormData);
-        setSelectedProveedor(null);
+        try {
+            if (selectedProveedor) {
+                await apiPost(`/proveedores/${selectedProveedor.id_proveedor}`, body, { method: "PATCH" });
+            } else {
+                await apiPost('/proveedores', body);
+            }
+
+            fetchProveedores();
+            setIsFormOpen(false);
+            setFormData(initialFormData);
+            setSelectedProveedor(null);
+        } catch (err) {
+            console.error("Error guardando proveedor:", err);
+        }
     };
 
     const openFormForNew = () => {
@@ -214,33 +224,37 @@ const Proveedores = () => {
         setIsDeleteConfirmOpen(false);
     };
 
-    const closeForm = () => {
-        setIsFormOpen(false);
-        setFormData(initialFormData);
-        setSelectedProveedor(null);
-    };
-
     const openDeleteConfirm = (proveedor) => {
         setSelectedProveedor(proveedor);
         setIsDeleteConfirmOpen(true);
         setIsFormOpen(false);
     };
 
-    const deleteProveedor = () => {
-        setProveedores(proveedores.filter(p => p.id_proveedor !== selectedProveedor.id_proveedor));
+
+    const closeForm = () => {
+        setIsFormOpen(false);
+        setFormData(initialFormData);
+        setSelectedProveedor(null);
+    };
+    const deleteProveedor = async () => {
+        try {
+            await apiPost(`/proveedores/${selectedProveedor.id_proveedor}`, {}, { method: "DELETE" });
+            fetchProveedores();
+        } catch (err) {
+            console.error("Error eliminando proveedor", err);
+        }
         setIsDeleteConfirmOpen(false);
         setSelectedProveedor(null);
     };
 
     return (
         <AppLayout activeLink="/proveedores">
-            <div className="agents-container"> 
+            <div className="agents-container">
                 <h1 className="agents-title">Gestión de Proveedores</h1>
                 <p className="agents-subtitle">
                     Administración centralizada de datos y contactos de los proveedores.
                 </p>
 
-                {/* Controles */}
                 <div className="agents-controls">
                     <div className="search-bar-wrapper">
                         <div className="search-icon-left">
@@ -265,7 +279,6 @@ const Proveedores = () => {
                     </button>
                 </div>
 
-                {/* Formulario */}
                 {isFormOpen && (
                     <ProveedorForm
                         selectedProveedor={selectedProveedor}
@@ -276,7 +289,6 @@ const Proveedores = () => {
                     />
                 )}
 
-                {/* Confirmación eliminar */}
                 {isDeleteConfirmOpen && (
                     <DeleteConfirmBanner
                         selectedProveedor={selectedProveedor}
@@ -285,7 +297,6 @@ const Proveedores = () => {
                     />
                 )}
 
-                {/* Tabla */}
                 <div className="agents-table-wrapper">
                     <div className="table-responsive">
                         <table className="agents-table">
@@ -311,7 +322,7 @@ const Proveedores = () => {
                                             <td className="table-td" data-label="Teléfono:">{proveedor.telefono}</td>
                                             <td className="table-td table-td-email" data-label="Correo:">{proveedor.correo}</td>
                                             <td className="table-td" data-label="Dirección:">{proveedor.direccion}</td>
-                                            
+
                                             <td className="table-td table-td-actions">
                                                 <div className="actions-container">
                                                     <button

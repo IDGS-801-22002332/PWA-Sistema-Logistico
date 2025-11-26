@@ -1,8 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { 
-    Truck, Building2, User, Clock, MapPin, DollarSign, 
-    List, Plus, Search, CheckCircle, Package, Ship, Plane, Bus, Settings, Calendar 
-} from 'lucide-react';
+import { Truck, Building2, User, Clock, MapPin, DollarSign,  List, Plus, Search, CheckCircle, Package, Ship, Plane, Bus, Settings, Calendar } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './operaciones.css'; 
 
@@ -96,10 +93,7 @@ const OperacionCard = ({ operacion, onAction }) => {
                 gridTemplateColumns: '3fr 1fr', 
             }}
         >
-            {/* COLUMNA PRINCIPAL (3/4) - DETALLES LOGÍSTICOS */}
             <div style={{ padding: '1.5rem', borderRight: '1px solid #e5e7eb' }}>
-                
-                {/* 1. HEADER DE LA TARJETA */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)', margin: 0 }}>
                         <Settings size={18} style={{ verticalAlign: 'middle', marginRight: '5px' }} />
@@ -118,11 +112,7 @@ const OperacionCard = ({ operacion, onAction }) => {
                         {status.icon} {status.text.toUpperCase()}
                     </span>
                 </div>
-
-                {/* 2. DETALLES CLAVE EN GRID INTERNO */}
                 <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    
-                    {/* Fila 1: Cliente y Encargado Operativo */}
                     <div className="form-group" style={{ margin: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Cliente (Cotización #{operacion.id_cotizacion})</label>
                         <p style={{ margin: 0, fontWeight: 600 }}><Building2 size={14} style={{ verticalAlign: 'middle', marginRight: '5px' }} />{operacion.cliente_nombre}</p>
@@ -132,8 +122,6 @@ const OperacionCard = ({ operacion, onAction }) => {
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Encargado Operativo</label>
                         <p style={{ margin: 0, fontSize: '0.95rem' }}><User size={14} style={{ verticalAlign: 'middle', marginRight: '5px' }} />{operacion.usuario_operativo_nombre}</p>
                     </div>
-
-                    {/* Fila 2: Servicio, Ruta */}
                     <div className="form-group" style={{ margin: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.85rem' }}>Servicio ({operacion.incoterm})</label>
                         <p style={{ margin: 0 }}>
@@ -151,18 +139,12 @@ const OperacionCard = ({ operacion, onAction }) => {
                     </div>
                 </div>
             </div>
-
-            {/* COLUMNA LATERAL (1/4) - RESUMEN RÁPIDO Y ACCIONES */}
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center' }}>
-                
-                {/* Resumen Financiero Rápido */}
                 <div style={{ textAlign: 'center', width: '100%', marginBottom: '1rem' }}>
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>Total Venta</label>
                     <p style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--success)', margin: '0.2rem 0 0.5rem' }}>
                         {operacion.moneda} {operacion.total_venta.toFixed(2)}
                     </p>
-                    
-                    {/* Indicadores de Fechas */}
                     <div style={{ fontSize: '0.9rem', color: 'var(--info)', fontWeight: 600 }}>
                         <Calendar size={14} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
                         Salida Est: {operacion.fecha_salida_estimada}
@@ -172,8 +154,6 @@ const OperacionCard = ({ operacion, onAction }) => {
                         Llegada Est: {operacion.fecha_llegada_estimada}
                     </div>
                 </div>
-
-                {/* Botones de Acción */}
                 <div className="form-actions" style={{ paddingTop: '0', borderTop: 'none', justifyContent: 'center', gap: '0.5rem' }}>
                     <button className="btn btn-secondary" onClick={() => onAction('view', operacion)} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
                         <List size={18} /> Ver Tracking
@@ -214,15 +194,12 @@ const Operaciones = () => {
     return (
         <AppLayout activeLink="/operaciones">
             <div className="agents-container"> 
-                
-                {/* HEADER Y CONTROLES */}
                 <h1 className="agents-title">
                     Listado General de Operaciones
                 </h1>
                 <p className="agents-subtitle">
                     Seguimiento en tiempo real y gestión de las operaciones logísticas activas.
                 </p>
-
                 <div className="agents-controls" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1.5rem' }}>
                     <div className="search-bar-wrapper">
                         <div className="search-icon-left">
@@ -245,8 +222,6 @@ const Operaciones = () => {
                         Crear Nueva Operación
                     </button>
                 </div>
-
-                {/* LISTADO DE TARJETAS */}
                 <div 
                     className="cotizaciones-list-grid" 
                     style={{ 

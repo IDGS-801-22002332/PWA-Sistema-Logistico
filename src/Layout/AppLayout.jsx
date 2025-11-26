@@ -1,21 +1,53 @@
 // src/layout/AppLayout.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     LogOut, Home, Users, Package, ClipboardList,
     Truck, FileText, UserCog, DollarSign,
-    BadgeCheck
+    BadgeCheck, Moon, Sun
 } from 'lucide-react';
 
 import '../components/panel.css';
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-
 const AppLayout = ({ children, activeLink }) => {
 
+    // --------------------------------
+    //  Cargar usuario desde localStorage
+    // --------------------------------
+    const [user, setUser] = useState(() => {
+        try {
+            const storedUser = localStorage.getItem("user");
+            return storedUser ? JSON.parse(storedUser) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    // --------------------------
+    //  MODO OSCURO / CLARO
+    // --------------------------
+    const [darkMode, setDarkMode] = useState(
+        localStorage.getItem('theme') === 'dark'
+    );
+
+    useEffect(() => {
+        if (darkMode) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [darkMode]);
+
+    const toggleDarkMode = () => setDarkMode(!darkMode);
+
+    // --------------------------
+    // LOGOUT (100% funcional)
+    // --------------------------
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/';
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/";
     };
 
     const isActive = (route) =>
@@ -34,13 +66,11 @@ const AppLayout = ({ children, activeLink }) => {
 
                 <nav className="sidebar-nav">
 
-                    {/* INICIO */}
                     <a href="/panel" className={isActive('/panel')}>
                         <Home className="nav-icon" />
                         <span>Inicio</span>
                     </a>
 
-                    {/* ---------------- MAESTROS ---------------- */}
                     <span className="nav-section-title">Maestros</span>
 
                     <a href="/agentes" className={isActive('/agentes')}>
@@ -68,7 +98,6 @@ const AppLayout = ({ children, activeLink }) => {
                         <span>Usuarios</span>
                     </a>
 
-                    {/* ---------------- OPERACIONES ---------------- */}
                     <span className="nav-section-title">Operaciones</span>
 
                     <a href="/cotizaciones" className={isActive('/cotizaciones')}>
@@ -88,7 +117,7 @@ const AppLayout = ({ children, activeLink }) => {
 
                 </nav>
 
-                {/* LOGOUT (FIJO Y NO RECORTADO) */}
+                {/* LOGOUT */}
                 <div className="sidebar-footer">
                     <button onClick={handleLogout} className="logout-button">
                         <LogOut className="nav-icon" />
@@ -105,10 +134,25 @@ const AppLayout = ({ children, activeLink }) => {
                     <h1 className="header-title">CRM Logistico PWA</h1>
 
                     <div className="user-info">
-                        <span className="user-name">Hola, {user.nombre || 'Usuario'}</span>
+
+                        {/* BOTÓN DE MODO OSCURO / CLARO */}
+                        <button
+                            onClick={toggleDarkMode}
+                            className="darkmode-btn"
+                        >
+                            {darkMode ? <Sun /> : <Moon />}
+                        </button>
+
+                        {/* EMAIL DEL USUARIO */}
+                        <span className="user-name">
+                            {user?.email || "usuario@correo.com"}
+                        </span>
+
+                        {/* AVATAR */}
                         <div className="user-avatar">
-                            {user.nombre ? user.nombre[0] : 'U'}
+                            {user?.email ? user.email.charAt(0).toUpperCase() : "U"}
                         </div>
+
                     </div>
                 </header>
 

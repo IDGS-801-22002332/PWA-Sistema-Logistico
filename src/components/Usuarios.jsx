@@ -1,17 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { 
-    Search, Plus, Edit, Trash2, User, Mail, Lock, Zap, CheckCircle, XCircle, 
-    Save, X, AlertTriangle, ChevronsUpDown, Key, ToggleLeft, ToggleRight
-} from 'lucide-react';
+import { Search, Plus, Edit, Trash2, User, Mail, Lock, Zap, CheckCircle, XCircle,  Save, X, AlertTriangle, ChevronsUpDown, Key, ToggleLeft, ToggleRight } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './usuarios.css'; 
-
+import api from "../services/api";
 
 const RolUsuario = {
-    ADMINISTRADOR: 'Administrador',
-    SUPERVISOR: 'Supervisor',
-    OPERADOR: 'Operador',
-    FINANZAS: 'Finanzas',
+    admin: "admin",
+    ventas: "ventas",
+    operaciones: "operaciones",
+    cliente: "cliente"
 };
 
 const initialFormData = {
@@ -48,8 +45,6 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
 
             <form onSubmit={handleFormSubmit} className="form-content">
                 <div className="form-grid">
-
-                    {/* Nombre */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="nombre">Nombre*</label>
                         <div className="input-field-wrapper">
@@ -65,8 +60,6 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
                             />
                         </div>
                     </div>
-
-                    {/* Apellido */}
                     <div className="form-group">
                         <label className="form-label" htmlFor="apellido">Apellido*</label>
                         <div className="input-field-wrapper">
@@ -82,10 +75,8 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
                             />
                         </div>
                     </div>
-                    
-                    {/* Email */}
                     <div className="form-group">
-                        <label className="form-label" htmlFor="email">Correo Electrónico (Email)*</label>
+                        <label className="form-label" htmlFor="email">Correo Electrónico*</label>
                         <div className="input-field-wrapper">
                             <span className="input-icon-left"><Mail size={20} className="input-icon"/></span>
                             <input 
@@ -99,10 +90,10 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
                             />
                         </div>
                     </div>
-
-                    {/* Contraseña */}
                     <div className="form-group">
-                        <label className="form-label" htmlFor="password">Contraseña {selectedUsuario ? '(dejar vacío para no cambiar)' : '*'}</label>
+                        <label className="form-label" htmlFor="password">
+                            Contraseña {selectedUsuario ? '(opcional)' : '*'}
+                        </label>
                         <div className="input-field-wrapper">
                             <span className="input-icon-left"><Lock size={20} className="input-icon"/></span>
                             <input 
@@ -112,14 +103,12 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
                                 value={formData.password}
                                 onChange={handleFormChange}
                                 className="form-input with-icon"
-                                required={!selectedUsuario} 
+                                required={!selectedUsuario}
                             />
                         </div>
                     </div>
-
-                    {/* Rol */}
                     <div className="form-group">
-                        <label className="form-label" htmlFor="rol">Rol de Usuario*</label>
+                        <label className="form-label" htmlFor="rol">Rol*</label>
                         <div className="select-wrapper">
                             <select 
                                 id="rol"
@@ -129,13 +118,12 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
                                 className="form-select"
                                 required
                             >
-                                <option value="" disabled>Seleccione un rol...</option>
+                                <option value="" disabled>Seleccione...</option>
                                 {renderRolOptions()}
                             </select>
                             <ChevronsUpDown size={20} className="select-arrow" />
                         </div>
                     </div>
-
                     <div className="form-group">
                         <label className="form-label">Estado</label>
                         <div className="input-field-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingTop: '0.4rem' }}>
@@ -143,15 +131,11 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
                                 type="button"
                                 onClick={handleToggleActivo}
                                 className="action-btn"
-                                style={{ 
-                                    backgroundColor: 'transparent', 
-                                    padding: 0, 
-                                    color: formData.activo ? 'var(--secondary)' : 'var(--text-secondary)' 
-                                }}
+                                style={{ backgroundColor: 'transparent', padding: 0 }}
                             >
                                 {formData.activo ? <ToggleRight size={36} /> : <ToggleLeft size={36} />}
                             </button>
-                            <span style={{ fontWeight: 600, color: formData.activo ? 'var(--success)' : 'var(--danger)' }}>
+                            <span style={{ fontWeight: 600 }}>
                                 {formData.activo ? 'ACTIVO' : 'INACTIVO'}
                             </span>
                         </div>
@@ -176,25 +160,25 @@ export const UsuarioForm = ({ selectedUsuario, formData, handleFormChange, handl
 
 
 const Usuarios = () => {
+
     const [usuarios, setUsuarios] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [selectedUsuario, setSelectedUsuario] = useState(null);
     const [formData, setFormData] = useState(initialFormData);
+    const fetchUsuarios = async () => {
+        try {
+            const data = await api.apiGet("/usuarios");
+            setUsuarios(data);
+        } catch (err) {
+            console.error("Error cargando usuarios:", err);
+        }
+    };
 
     useEffect(() => {
         fetchUsuarios();
     }, []);
-
-    const fetchUsuarios = () => {
-        const data = [
-            { id_usuario: 1, nombre: "Juan", apellido: "Perez", email: "juan.perez@empresa.com", rol: 'ADMINISTRADOR', activo: true, fecha_registro: '2023-01-10' },
-            { id_usuario: 2, nombre: "Maria", apellido: "Lopez", email: "maria.lopez@empresa.com", rol: 'OPERADOR', activo: true, fecha_registro: '2023-05-15' },
-            { id_usuario: 3, nombre: "Carlos", apellido: "Gomez", email: "carlos.gomez@empresa.com", rol: 'FINANZAS', activo: false, fecha_registro: '2024-02-20' },
-        ];
-        setUsuarios(data);
-    };
 
     const getRolName = (rolKey) => RolUsuario[rolKey] || 'Desconocido';
 
@@ -211,13 +195,24 @@ const Usuarios = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
-
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
-        setIsFormOpen(false);
-        setFormData(initialFormData);
-        setSelectedUsuario(null);
-        fetchUsuarios(); 
+
+        try {
+            if (selectedUsuario) {
+                await api.apiPut(`/usuarios/${selectedUsuario.id_usuario}`, formData);
+            } else {
+                await api.apiPost("/usuarios", formData);
+            }
+
+            fetchUsuarios();
+            setIsFormOpen(false);
+            setSelectedUsuario(null);
+            setFormData(initialFormData);
+
+        } catch (err) {
+            console.error("Error guardando usuario:", err);
+        }
     };
 
     const openFormForNew = () => {
@@ -233,7 +228,7 @@ const Usuarios = () => {
             nombre: usuario.nombre,
             apellido: usuario.apellido,
             email: usuario.email,
-            password: '', 
+            password: "",
             rol: usuario.rol,
             activo: usuario.activo,
         });
@@ -246,6 +241,17 @@ const Usuarios = () => {
         setFormData(initialFormData);
         setSelectedUsuario(null);
     };
+    const deleteUsuario = async () => {
+        try {
+            await api.apiDelete(`/usuarios/${selectedUsuario.id_usuario}`);
+
+            fetchUsuarios();
+            setIsDeleteConfirmOpen(false);
+            setSelectedUsuario(null);
+        } catch (err) {
+            console.error("Error eliminando usuario:", err);
+        }
+    };
 
     const openDeleteConfirm = (usuario) => {
         setSelectedUsuario(usuario);
@@ -253,19 +259,12 @@ const Usuarios = () => {
         setIsFormOpen(false);
     };
 
-    const deleteUsuario = () => {
-        setUsuarios(usuarios.filter(u => u.id_usuario !== selectedUsuario.id_usuario));
-        setIsDeleteConfirmOpen(false);
-        setSelectedUsuario(null);
-    };
-
     const DeleteConfirmBanner = ({ selectedUsuario, deleteUsuario, cancel }) => (
         <div className="delete-confirm-banner">
             <div className="banner-icon-message">
                 <AlertTriangle size={24} className="banner-icon" />
                 <p>
-                    ¿Seguro que deseas eliminar al usuario **{selectedUsuario?.nombre} {selectedUsuario?.apellido}** ({selectedUsuario?.email})? 
-                    Esta acción es irreversible.
+                    ¿Seguro que deseas eliminar a <strong>{selectedUsuario?.nombre} {selectedUsuario?.apellido}</strong>? 
                 </p>
             </div>
 
@@ -286,10 +285,8 @@ const Usuarios = () => {
             <div className="agents-container"> 
                 <h1 className="agents-title">Gestión de Usuarios</h1>
                 <p className="agents-subtitle">
-                    Administración de credenciales y asignación de roles de acceso al sistema.
+                    Administración de credenciales y roles.
                 </p>
-
-                {/* Controles */}
                 <div className="agents-controls">
                     <div className="search-bar-wrapper">
                         <div className="search-icon-left">
@@ -313,8 +310,6 @@ const Usuarios = () => {
                         Nuevo Usuario
                     </button>
                 </div>
-
-                {/* Formulario */}
                 {isFormOpen && (
                     <UsuarioForm
                         selectedUsuario={selectedUsuario}
@@ -324,8 +319,6 @@ const Usuarios = () => {
                         closeForm={closeForm}
                     />
                 )}
-
-                {/* Confirmación eliminar */}
                 {isDeleteConfirmOpen && (
                     <DeleteConfirmBanner
                         selectedUsuario={selectedUsuario}
@@ -333,8 +326,6 @@ const Usuarios = () => {
                         cancel={() => setIsDeleteConfirmOpen(false)}
                     />
                 )}
-
-                {/* Tabla */}
                 <div className="agents-table-wrapper">
                     <div className="table-responsive">
                         <table className="agents-table">
@@ -353,19 +344,17 @@ const Usuarios = () => {
                                 {filteredUsuarios.length > 0 ? (
                                     filteredUsuarios.map((usuario) => (
                                         <tr key={usuario.id_usuario} className="table-row">
-                                            <td className="table-td table-td-id" data-label="ID:">{usuario.id_usuario}</td>
-                                            <td className="table-td table-td-name" data-label="Nombre:">
+                                            <td className="table-td table-td-id">{usuario.id_usuario}</td>
+                                            <td className="table-td">
                                                 {usuario.nombre} {usuario.apellido}
                                             </td>
-                                            <td className="table-td table-td-email" data-label="Email:">{usuario.email}</td>
-                                            <td className="table-td" data-label="Rol:">
-                                                <Zap size={16} style={{ verticalAlign: 'middle', marginRight: '5px', color: 'var(--primary)' }} />
+                                            <td className="table-td">{usuario.email}</td>
+                                            <td className="table-td">
+                                                <Zap size={16} style={{ marginRight: '5px' }} />
                                                 {getRolName(usuario.rol)}
                                             </td>
-                                            <td className="table-td" data-label="Estado:">
+                                            <td className="table-td">
                                                 <span style={{ 
-                                                    fontWeight: 600, 
-                                                    color: usuario.activo ? 'var(--success)' : 'var(--danger)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '0.4rem'
@@ -384,7 +373,6 @@ const Usuarios = () => {
                                                     >
                                                         <Edit size={18} />
                                                     </button>
-
                                                     <button
                                                         onClick={() => openDeleteConfirm(usuario)}
                                                         className="action-btn action-btn-delete"
