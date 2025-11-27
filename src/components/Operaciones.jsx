@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Truck, Building2, User, Clock, MapPin, DollarSign, List, Plus, Search,
     CheckCircle, Package, Ship, Plane, Bus, Settings, Calendar, Save, X, Trash2
 } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './operaciones.css';
+import { apiGet, apiPost, apiPut, apiDelete } from '../services/api.js';
 
 const TipoServicioDisplay = { MARITIMO: 'Marítimo', AEREO: 'Aéreo', TERRESTRE: 'Terrestre' };
 const IncotermDisplay = { FOB: 'FOB', CIF: 'CIF', DDP: 'DDP', EXW: 'EXW' };
@@ -18,53 +19,7 @@ const getServiceIcon = (tipo) => {
     }
 };
 
-const mockOperacionesData = [
-    {
-        id_operacion: 1001,
-        id_cotizacion: 9001,
-        referencia_booking: "MSK9001-25",
-        cliente_nombre: "Cliente Alfa S.A. (Ana Ruiz)",
-        usuario_ventas_nombre: "Juan Pérez",
-        usuario_operativo_nombre: "Marta López (Op)",
-        tipo_servicio: 'MARITIMO', incoterm: 'FOB',
-        origen_nombre: "Shenzhen, CN", destino_nombre: "Veracruz, MX",
-        total_venta: 15000.00, moneda: 'USD',
-        fecha_salida_estimada: '2025-11-20',
-        fecha_llegada_estimada: '2025-12-30',
-        estatus_operacion: 'TRANSITO',
-        documentos_pendientes: 3,
-    },
-    {
-        id_operacion: 1002,
-        id_cotizacion: 9002,
-        referencia_booking: "DHL850-26",
-        cliente_nombre: "Distribuidora Beta (Luis Torres)",
-        usuario_ventas_nombre: "Ana García",
-        usuario_operativo_nombre: "Carlos Ruiz (Op)",
-        tipo_servicio: 'AEREO', incoterm: 'DDP',
-        origen_nombre: "Miami, US", destino_nombre: "Ciudad de México",
-        total_venta: 850.50, moneda: 'USD',
-        fecha_salida_estimada: '2025-08-05',
-        fecha_llegada_estimada: '2025-08-15',
-        estatus_operacion: 'ENTREGADA',
-        documentos_pendientes: 0,
-    },
-    {
-        id_operacion: 1003,
-        id_cotizacion: 9003,
-        referencia_booking: "TRMX-4500",
-        cliente_nombre: "Cliente Alfa S.A. (Ana Ruiz)",
-        usuario_ventas_nombre: "Luis Martínez",
-        usuario_operativo_nombre: "Marta López (Op)",
-        tipo_servicio: 'TERRESTRE', incoterm: 'EXW',
-        origen_nombre: "Monterrey, MX", destino_nombre: "Laredo, US",
-        total_venta: 4500.00, moneda: 'MXN',
-        fecha_salida_estimada: '2025-10-10',
-        fecha_llegada_estimada: '2025-10-12',
-        estatus_operacion: 'EN_ORIGEN',
-        documentos_pendientes: 1,
-    },
-];
+const initialOperaciones = [];
 
 const getStatusOperacionDisplay = (status) => {
     switch (status) {
@@ -326,8 +281,9 @@ const initialOperacionForm = {
 };
 
 const Operaciones = () => {
-    const [operaciones, setOperaciones] = useState(mockOperacionesData);
+    const [operaciones, setOperaciones] = useState(initialOperaciones);
     const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedOperacion, setSelectedOperacion] = useState(null);
@@ -360,15 +316,39 @@ const Operaciones = () => {
         setFormData(prev => ({ ...prev, [name]: parsed }));
     };
 
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
+        // Build payload following backend DTO (whitelist enabled)
+        const payload = {
+            id_cotizacion: formData.id_cotizacion ? Number(formData.id_cotizacion) : undefined,
+            id_cliente: Number(formData.id_cliente || formData.cliente_id || 1),
+            id_usuario_operativo: Number(formData.id_usuario_operativo || 1),
+            id_proveedor: Number(formData.id_proveedor || 1),
+            id_agente: formData.id_agente ? Number(formData.id_agente) : undefined,
+            tipo_servicio: formData.tipo_servicio,
+            // tipo_carga is optional in DTO, use default FCL if not provided
+            tipo_carga: formData.tipo_carga || 'FCL',
+            incoterm: formData.incoterm || 'FOB',
+            fecha_estimada_arribo: formData.fecha_llegada_estimada || undefined,
+            fecha_estimada_entrega: formData.fecha_salida_estimada || undefined,
+            numero_referencia_proveedor: formData.referencia_booking || undefined,
+            notas_operacion: formData.notas_operacion || undefined,
+        };
 
-        if (selectedOperacion) {
-            setOperaciones(prev => prev.map(o => (o.id_operacion === selectedOperacion.id_operacion ? { ...o, ...formData, id_operacion: o.id_operacion } : o)));
-        } else {
-            const newId = Math.max(0, ...operaciones.map(op => op.id_operacion)) + 1;
-            const nueva = { ...formData, id_operacion: newId };
-            setOperaciones(prev => [nueva, ...prev]);
+        try {
+            if (selectedOperacion) {
+                await apiPut(`/operaciones/${selectedOperacion.id_operacion}`, payload);
+                alert('Operación actualizada');
+            } else {
+                const created = await apiPost('/operaciones', payload);
+                alert(`Operación creada (ID: ${created?.id_operacion || created?.id || 'n/a'})`);
+            }
+            // refresh
+            const latest = await apiGet('/operaciones');
+            setOperaciones(latest || []);
+        } catch (err) {
+            console.error(err);
+            alert('Error guardando la operación: ' + (err.message || err));
         }
 
         setIsFormOpen(false);
@@ -418,12 +398,37 @@ const Operaciones = () => {
         setSelectedOperacion(null);
     };
 
-    const deleteOperacion = () => {
+    const deleteOperacion = async () => {
         if (!selectedOperacion) return;
-        setOperaciones(prev => prev.filter(o => o.id_operacion !== selectedOperacion.id_operacion));
-        setIsDeleteOpen(false);
-        setSelectedOperacion(null);
+        try {
+            await apiDelete(`/operaciones/${selectedOperacion.id_operacion}`);
+            const latest = await apiGet('/operaciones');
+            setOperaciones(latest || []);
+            setIsDeleteOpen(false);
+            setSelectedOperacion(null);
+            alert('Operación eliminada');
+        } catch (err) {
+            console.error(err);
+            alert('Error eliminando la operación');
+        }
     };
+
+    useEffect(() => {
+        let mounted = true;
+        async function load() {
+            setLoading(true);
+            try {
+                const data = await apiGet('/operaciones');
+                if (mounted) setOperaciones(data || []);
+            } catch (err) {
+                console.error('Error cargando operaciones', err);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        }
+        load();
+        return () => { mounted = false };
+    }, []);
 
     return (
         <AppLayout activeLink="/operaciones">

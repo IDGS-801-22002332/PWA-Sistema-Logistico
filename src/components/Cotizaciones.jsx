@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FileText, Building2, User, Truck, Calendar, DollarSign, MapPin, List, Plus, Search, Clock, Activity, Edit, Box, Factory, Briefcase, Plane, Ship, Bus} from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './cotizaciones.css'; 
+import { apiGet, apiPost } from '../services/api.js';
 
 const TipoServicioDisplay = { MARITIMO: 'Marítimo', AEREO: 'Aéreo', TERRESTRE: 'Terrestre' };
 const TipoCargaDisplay = { FCL: 'Cont. Completo (FCL)', LCL: 'Cont. Parcial (LCL)', CARGA_SUELTA: 'Carga Suelta' };
@@ -15,54 +16,7 @@ const getServiceIcon = (tipo) => {
     }
 };
 
-const mockCotizacionesData = [
-    {
-        id_cotizacion: 9001,
-        id_cliente: 1, cliente_nombre: "Cliente Alfa S.A. (Ana Ruiz)",
-        usuario_ventas_nombre: "Juan Pérez (Ventas)",
-        tipo_servicio: 'MARITIMO', tipo_carga: 'FCL', incoterm: 'FOB',
-        origen_nombre: "Shenzhen, CN", destino_nombre: "Veracruz, MX",
-        proveedor_nombre: "Maersk Lines", id_proveedor: 10,
-        agente_nombre: "Agente Aduanal S.C.", id_agente: 101,
-        precio_final: 15000.00, moneda: 'USD',
-        fecha_vigencia: '2025-11-25', 
-        fecha_creacion: '2025-10-15',
-        fecha_estimada_arribo: '2025-12-30',
-        estatus: 'enviada', 
-        total_actividades_pendientes: 2,
-    },
-    {
-        id_cotizacion: 9002,
-        id_cliente: 2, cliente_nombre: "Distribuidora Beta (Luis Torres)",
-        usuario_ventas_nombre: "Ana García (Ventas)",
-        tipo_servicio: 'AEREO', tipo_carga: 'CARGA_SUELTA', incoterm: 'DDP',
-        origen_nombre: "Miami, US", destino_nombre: "Ciudad de México",
-        proveedor_nombre: "DHL Cargo", id_proveedor: 20,
-        agente_nombre: null, id_agente: null,
-        precio_final: 850.50, moneda: 'USD',
-        fecha_vigencia: '2026-03-10',
-        fecha_creacion: '2025-08-01',
-        fecha_estimada_arribo: '2025-08-15',
-        estatus: 'aprobada',
-        total_actividades_pendientes: 0,
-    },
-    {
-        id_cotizacion: 9003,
-        id_cliente: 1, cliente_nombre: "Cliente Alfa S.A. (Ana Ruiz)",
-        usuario_ventas_nombre: "Luis Martínez (Ventas)",
-        tipo_servicio: 'TERRESTRE', tipo_carga: 'LCL', incoterm: 'EXW',
-        origen_nombre: "Monterrey, MX", destino_nombre: "Laredo, US",
-        proveedor_nombre: "Transportes MX", id_proveedor: 30,
-        agente_nombre: "Agente Aduanal S.C.", id_agente: 101,
-        precio_final: 4500.00, moneda: 'MXN',
-        fecha_vigencia: '2025-10-17',
-        fecha_creacion: '2025-10-10',
-        fecha_estimada_arribo: '2025-10-12',
-        estatus: 'rechazada',
-        motivo_rechazo: 'Precio excedido',
-        total_actividades_pendientes: 0,
-    },
-];
+const initialCotizaciones = [];
 
 const getStatusDisplay = (status) => {
     switch (status) {
@@ -180,8 +134,26 @@ const CotizacionCard = ({ cotizacion, onAction }) => {
 };
 
 const Cotizaciones = () => {
-    const [cotizaciones] = useState(mockCotizacionesData);
+    const [cotizaciones, setCotizaciones] = useState(initialCotizaciones);
     const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        async function load() {
+            setLoading(true);
+            try {
+                const data = await apiGet('/cotizaciones');
+                if (mounted) setCotizaciones(data || []);
+            } catch (err) {
+                console.error('Error cargando cotizaciones', err);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        }
+        load();
+        return () => { mounted = false };
+    }, []);
     const filteredCotizaciones = useMemo(() => {
         if (!searchTerm) return cotizaciones;
         return cotizaciones.filter((c) =>
@@ -191,13 +163,37 @@ const Cotizaciones = () => {
         );
     }, [cotizaciones, searchTerm]);
 
-    const handleAction = (action, cotizacion) => {
+    const handleAction = async (action, cotizacion) => {
         if (action === 'new') {
-            alert('Abriendo formulario para Nueva Cotización...');
+            // Minimal creation flow: ask for required minimal fields
+            try {
+                const id_cliente = Number(prompt('ID cliente (num):', '1'));
+                const id_proveedor = Number(prompt('ID proveedor (num):', '1'));
+                if (!id_cliente || !id_proveedor) return alert('ID cliente/proveedor requeridos');
+                const dto = {
+                    id_cliente,
+                    id_usuario_ventas: Number(localStorage.getItem('user_id') || 1),
+                    id_origen_localizacion: Number(prompt('ID origen localizacion:', '1')) || 1,
+                    id_destino_localizacion: Number(prompt('ID destino localizacion:', '1')) || 1,
+                    id_proveedor,
+                    tipo_servicio: prompt('Tipo servicio (MARITIMO/AEREO/TERRESTRE):', 'MARITIMO') || 'MARITIMO',
+                    tipo_carga: prompt('Tipo carga (FCL/LCL/CARGA_SUELTA):', 'FCL') || 'FCL',
+                    incoterm: prompt('Incoterm (FOB/CIF/DDP/EXW):', 'FOB') || 'FOB',
+                    descripcion_mercancia: prompt('Descripción mercancia:', '') || undefined,
+                    estatus: 'pendiente',
+                };
+                const created = await apiPost('/cotizaciones', dto);
+                alert(`Cotización creada: ID ${created?.id_cotizacion || created?.id || 'n/a'}`);
+                const latest = await apiGet('/cotizaciones');
+                setCotizaciones(latest || []);
+            } catch (err) {
+                console.error(err);
+                alert('Error creando cotización');
+            }
         } else if (action === 'view') {
-            alert(`Navegando a la vista de DETALLE de Cotización #${cotizacion.id_cotizacion}`);
+            alert(`Detalle de Cotización #${cotizacion.id_cotizacion} (abrir vista)`);
         } else if (action === 'edit') {
-            alert(`Abriendo el formulario de EDICIÓN para Cotización #${cotizacion.id_cotizacion}`);
+            alert(`Editar Cotización #${cotizacion.id_cotizacion} (abrir formulario)`);
         }
     };
 

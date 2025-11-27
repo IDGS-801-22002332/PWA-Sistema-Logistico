@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MessageSquare, Building2, Calendar, MapPin, Package, List, Plus, Search, Ship, Plane, Bus, FileText, DollarSign, Clock } from 'lucide-react';
 import AppLayout from '../Layout/AppLayout';
 import './solicitudes.css'; 
+import { apiGet, apiPost, apiPut } from '../services/api.js';
 
 const TipoServicioDisplay = { MARITIMO: 'Marítimo', AEREO: 'Aéreo', TERRESTRE: 'Terrestre' };
 const TipoCargaDisplay = { FCL: 'Cont. Completo (FCL)', LCL: 'Cont. Parcial (LCL)', CARGA_SUELTA: 'Carga Suelta' };
@@ -15,41 +16,7 @@ const getServiceIcon = (tipo) => {
     }
 };
 
-const mockSolicitudesData = [
-    {
-        id_solicitud: 501,
-        id_cliente: 1, cliente_nombre: "Cliente Alfa S.A.",
-        tipo_servicio: 'MARITIMO', tipo_carga: 'FCL',
-        origen_nombre: "Shanghái, CN", destino_nombre: "Lázaro Cárdenas, MX",
-        fecha_solicitud: '2025-11-18',
-        descripcion_mercancia: '20 paletas de electrónica sensible.',
-        valor_estimado_mercancia: '50000.00',
-        estatus: 'nueva',
-        dias_abierta: 0,
-    },
-    {
-        id_solicitud: 502,
-        id_cliente: 3, cliente_nombre: "Importadora Gama S. de R.L.",
-        tipo_servicio: 'AEREO', tipo_carga: 'CARGA_SUELTA',
-        origen_nombre: "Fráncfort, DE", destino_nombre: "Guadalajara, MX",
-        fecha_solicitud: '2025-11-15',
-        descripcion_mercancia: 'Muestras textiles urgentes.',
-        valor_estimado_mercancia: '12000.00',
-        estatus: 'en_proceso',
-        dias_abierta: 3,
-    },
-    {
-        id_solicitud: 503,
-        id_cliente: 2, cliente_nombre: "Distribuidora Beta",
-        tipo_servicio: 'TERRESTRE', tipo_carga: 'LCL',
-        origen_nombre: "Cancún, MX", destino_nombre: "Ciudad de México, MX",
-        fecha_solicitud: '2025-11-01',
-        descripcion_mercancia: 'Material de construcción.',
-        valor_estimado_mercancia: '8000.00',
-        estatus: 'cotizada',
-        dias_abierta: 17,
-    },
-];
+const initialSolicitudes = [];
 
 const getStatusSolicitudDisplay = (status) => {
     switch (status) {
@@ -179,8 +146,26 @@ const SolicitudCard = ({ solicitud, onAction }) => {
 };
 
 const Solicitudes = () => {
-    const [solicitudes] = useState(mockSolicitudesData);
+    const [solicitudes, setSolicitudes] = useState(initialSolicitudes);
     const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        async function load() {
+            setLoading(true);
+            try {
+                const data = await apiGet('/solicitudes');
+                if (mounted) setSolicitudes(data || []);
+            } catch (err) {
+                console.error('Error cargando solicitudes', err);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        }
+        load();
+        return () => { mounted = false };
+    }, []);
 
     const filteredSolicitudes = useMemo(() => {
         if (!searchTerm) return solicitudes;
@@ -191,13 +176,53 @@ const Solicitudes = () => {
         );
     }, [solicitudes, searchTerm]);
 
-    const handleAction = (action, solicitud) => {
+    const handleAction = async (action, solicitud) => {
         if (action === 'new') {
-            alert('Abriendo formulario para registrar Solicitud Manual...');
+            alert('Abriendo formulario para registrar Solicitud Manual (no implementado en esta versión)...');
         } else if (action === 'view') {
-            alert(`Navegando a la vista de DETALLE de Solicitud #${solicitud.id_solicitud}`);
+            // Simple placeholder: could open modal o navegar a detalle
+            alert(`Detalle de Solicitud #${solicitud.id_solicitud} (abrir vista detalle)`);
         } else if (action === 'cotizar') {
-            alert(`Abriendo el formulario de CREACIÓN de Cotización para Solicitud #${solicitud.id_solicitud}`);
+            // Crear una cotizacion incompleta basada en la solicitud y actualizar estatus
+            try {
+                const dto = {
+                    id_cliente: solicitud.id_cliente,
+                    id_usuario_ventas: Number(localStorage.getItem('user_id') || 1),
+                    id_origen_localizacion: solicitud.id_origen_localizacion || solicitud.id_origen || 0,
+                    id_destino_localizacion: solicitud.id_destino_localizacion || solicitud.id_destino || 0,
+                    id_proveedor: solicitud.id_proveedor || 1,
+                    id_agente: solicitud.id_agente || undefined,
+                    tipo_servicio: solicitud.tipo_servicio,
+                    tipo_carga: solicitud.tipo_carga,
+                    incoterm: solicitud.incoterm || 'FOB',
+                    fecha_estimada_arribo: solicitud.fecha_estimada_arribo || undefined,
+                    fecha_estimada_entrega: solicitud.fecha_estimada_entrega || undefined,
+                    descripcion_mercancia: solicitud.descripcion_mercancia || undefined,
+                    estatus: 'incompleta',
+                    id_solicitud_cliente: solicitud.id_solicitud || solicitud.id,
+                };
+
+                const created = await apiPost('/cotizaciones', dto);
+                // marcar solicitud como cotizada
+                await apiPut(`/solicitudes/${solicitud.id_solicitud || solicitud.id}`, { estatus: 'cotizada' });
+                alert(`Cotización creada (ID: ${created?.id_cotizacion || created?.id || 'n/a'}) y solicitud marcada como cotizada.`);
+                // refrescar lista
+                const latest = await apiGet('/solicitudes');
+                setSolicitudes(latest || []);
+            } catch (err) {
+                console.error(err);
+                alert('Error al crear la cotización: ' + (err.message || err));
+            }
+        } else if (action === 'rechazar') {
+            try {
+                await apiPut(`/solicitudes/${solicitud.id_solicitud || solicitud.id}`, { estatus: 'rechazada' });
+                alert(`Solicitud #${solicitud.id_solicitud || solicitud.id} rechazada.`);
+                const latest = await apiGet('/solicitudes');
+                setSolicitudes(latest || []);
+            } catch (err) {
+                console.error(err);
+                alert('Error al rechazar la solicitud');
+            }
         }
     };
 
