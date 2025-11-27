@@ -1,13 +1,3 @@
-:root {
-    --primary: #0F4C75;
-    --secondary: #00B7C2;
-    --dark-text: #2D3436;
-    --light-bg: #f7f8fb;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --shadow-secondary: rgba(0, 183, 194, 0.4);
-}
-
 * {
     box-sizing: border-box;
 }
@@ -18,12 +8,13 @@ html {
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden; 
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Inter', sans-serif;
-    background-color: var(--light-bg);
+    background-color: #1E293B; 
+    color: #F8FAFC; 
 }
 
 .login-container {
@@ -40,10 +31,10 @@ html {
     grid-template-columns: 1fr;
     width: 100%;
     max-width: 950px;
-    background: white;
+    background: #2D3A4A; 
     border-radius: 1rem;
     overflow: hidden;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); 
     align-self: center;
 }
 
@@ -52,8 +43,8 @@ html {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: var(--primary);
-    color: var(--light-bg);
+    background-color: #1E293B; 
+    color: #F8FAFC; 
     padding: 3rem;
     text-align: center;
 }
@@ -61,7 +52,7 @@ html {
 .motto-icon {
     width: 5rem;
     height: 5rem;
-    color: var(--secondary);
+    color: #0891b2; 
     margin-bottom: 1.5rem;
     animation: pulse 2s infinite;
 }
@@ -78,7 +69,7 @@ html {
 }
 
 .motto-text {
-    color: rgba(245, 246, 250, 0.85);
+    color: #94A3B8; 
     font-size: 1rem;
     line-height: 1.4;
     max-width: 250px;
@@ -100,21 +91,21 @@ html {
 }
 
 .mobile-icon {
+    color: #0891b2; 
     width: 2.5rem;
     height: 2.5rem;
-    color: var(--primary);
 }
 
 .form-title {
     font-size: 2rem;
     font-weight: 800;
-    color: var(--dark-text);
+    color: #F8FAFC; 
     margin-bottom: 0.5rem;
     text-align: center;
 }
 
 .form-subtitle {
-    color: var(--gray-500);
+    color: #94A3B8; 
     margin-bottom: 2.5rem;
     text-align: center;
 }
@@ -131,7 +122,7 @@ html {
 .input-label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--dark-text);
+    color: #F8FAFC; 
     margin-bottom: 0.25rem;
 }
 
@@ -146,22 +137,27 @@ html {
     transform: translateY(-50%);
     width: 1.25rem;
     height: 1.25rem;
-    color: var(--gray-400);
+    color: #94A3B8; 
 }
 
 .login-input {
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 2.5rem;
-    border: 1px solid #d1d5db;
+    background-color: #1E293B; 
+    border: 1px solid #3E4A5C; 
     border-radius: 0.5rem;
-    color: var(--dark-text);
+    color: #F8FAFC; 
     transition: all 0.15s ease-in-out;
 }
 
+.login-input::placeholder {
+    color: #64748B;
+}
+
 .login-input:focus {
-    border-color: var(--secondary);
+    border-color: #0891b2; 
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 183, 194, 0.3);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.5);
 }
 
 .options-row {
@@ -181,24 +177,26 @@ html {
 .checkbox-input {
     height: 1rem;
     width: 1rem;
-    accent-color: var(--secondary);
+    accent-color: #0891b2;
+    background-color: #1E293B;
+    border: 1px solid #3E4A5C;
 }
 
 .checkbox-label {
     margin-left: 0.5rem;
-    color: var(--dark-text);
+    color: #F8FAFC; 
 }
 
 .forgot-link,
 .register-link {
     font-weight: 500;
-    color: var(--primary);
+    color: #0891b2; 
     text-decoration: none;
 }
 
 .forgot-link:hover,
 .register-link:hover {
-    color: var(--secondary);
+    color: #0891b2;
 }
 
 .login-button {
@@ -207,34 +205,34 @@ html {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background-color: var(--secondary);
-    color: var(--primary);
+    background-color: #0891b2; 
+    color: #1E293B; 
     font-weight: 700;
     padding: 0.9rem 1rem;
     border-radius: 0.5rem;
     border: none;
     cursor: pointer;
-    box-shadow: 0 10px 15px -3px var(--shadow-secondary);
+    box-shadow: 0 10px 15px -3px rgba(6, 182, 212, 0.5);
     transition: all 0.3s;
     font-size: 1rem;
 }
 
 .login-button:hover {
-    background-color: #009ca5;
-    box-shadow: 0 15px 20px -5px var(--shadow-secondary);
+    background-color: #0891b2; 
+    box-shadow: 0 15px 20px -5px rgba(6, 182, 212, 0.5);
 }
 
 .register-text {
     margin-top: 2rem;
     text-align: center;
     font-size: 0.875rem;
-    color: var(--gray-500);
+    color: #94A3B8; 
 }
 
 @media (min-width: 768px) {
     .login-card {
         grid-template-columns: 1fr 1fr;
-        height: 80vh; 
+        height: 80vh;
     }
 
     .motto-panel {
