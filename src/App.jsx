@@ -6,6 +6,7 @@ import Agentes from "./components/Agentes.jsx";
 import Proveedores from "./components/Proveedores.jsx";
 import Tarifas from "./components/Tarifas.jsx";
 import Usuarios from "./components/Usuarios.jsx";
+import Localizaciones from "./components/Localizaciones.jsx";
 import Cotizaciones from "./components/Cotizaciones.jsx";
 import Operaciones from "./components/Operaciones.jsx";
 import Solicitudes from "./components/Solicitudes.jsx";
@@ -61,6 +62,15 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <Tarifas />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/localizaciones"
+                    element={
+                        <ProtectedRoute>
+                            <Localizaciones />
                         </ProtectedRoute>
                     }
                 />

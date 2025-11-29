@@ -5,13 +5,6 @@ import './tarifas.css';
 import { apiGet, apiPost, apiPut, apiDelete } from '../services/api';
 import { useProveedores } from '../hooks/useProveedores';
 
-const mockLocalizaciones = [
-    { id: 101, nombre: "Puerto de Veracruz, MX" },
-    { id: 102, nombre: "Aeropuerto JFK, US" },
-    { id: 103, nombre: "Shenzhen, CN" },
-    { id: 104, nombre: "Ciudad de México, MX" },
-];
-
 const TipoServicioBackend = {
     maritimo: 'Marítimo',
     aereo: 'Aéreo',
@@ -84,7 +77,9 @@ export const TarifaForm = ({
 
     const renderMasterOptions = (data) => (
         data.map(item => (
-            <option key={item.id} value={item.id}>{item.nombre}</option>
+            <option key={item.id || item.id_localizacion || item.id_proveedor} value={item.id || item.id_localizacion || item.id_proveedor}>
+                {item.nombre_ciudad || item.nombre}
+            </option>
         ))
     );
 
@@ -279,6 +274,7 @@ export const TarifaForm = ({
 
 const Tarifas = () => {
     const [tarifas, setTarifas] = useState([]);
+    const [localizaciones, setLocalizaciones] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -289,7 +285,6 @@ const Tarifas = () => {
 
     const { proveedores, loading: loadingProveedores, error: errorProveedores } = useProveedores();
 
-    const localizaciones = mockLocalizaciones;
     const TARIFA_ENDPOINT = '/tarifas';
     const ID_KEY = 'id_tarifa';
 
@@ -315,20 +310,34 @@ const Tarifas = () => {
         }
     };
 
+    const fetchLocalizaciones = async () => {
+        try {
+            const data = await apiGet('/localizaciones');
+            setLocalizaciones(data || []);
+        } catch (err) {
+            console.error("Error al obtener localizaciones:", err);
+        }
+    };
+
     useEffect(() => {
         fetchTarifas();
+        fetchLocalizaciones();
     }, []);
 
-    const getProveedorName = (id) => proveedores.find(p => p.id === parseInt(id))?.nombre || 'N/A';
-    const getLocationName = (id) => localizaciones.find(l => l.id === parseInt(id))?.nombre || 'N/A';
+    const getProveedorName = (tarifa) => tarifa.proveedor?.nombre || 'N/A';
+    const getLocationName = (tarifa, field) => {
+        if (field === 'origen') return tarifa.origen?.nombre_ciudad || 'N/A';
+        if (field === 'destino') return tarifa.destino?.nombre_ciudad || 'N/A';
+        return 'N/A';
+    };
 
     const filteredTarifas = useMemo(() => {
         return tarifas.filter((tarifa) =>
-            `${tarifa[ID_KEY]} ${getProveedorName(tarifa.id_proveedor)} ${tarifa.tipo_servicio} ${tarifa.tipo_carga} ${tarifa.incoterm} ${tarifa.precio_base} ${tarifa.moneda}`
+            `${tarifa[ID_KEY]} ${getProveedorName(tarifa)} ${tarifa.tipo_servicio} ${tarifa.tipo_carga} ${tarifa.incoterm} ${tarifa.precio_base} ${tarifa.moneda}`
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase())
         );
-    }, [tarifas, searchTerm, proveedores]);
+    }, [tarifas, searchTerm]);
     const handleFormSubmit = async (e) => {
         e.preventDefault();
 
@@ -515,10 +524,10 @@ const Tarifas = () => {
                                     filteredTarifas.map((tarifa) => (
                                         <tr key={tarifa[ID_KEY]} className="table-row">
                                             <td className="table-td table-td-id" data-label="ID:">{tarifa[ID_KEY]}</td>
-                                            <td className="table-td table-td-name" data-label="Proveedor:">{getProveedorName(tarifa.id_proveedor)}</td>
+                                            <td className="table-td table-td-name" data-label="Proveedor:">{getProveedorName(tarifa)}</td>
                                             <td className="table-td" data-label="Ruta:">
                                                 <MapPin size={16} style={{ verticalAlign: 'middle', marginRight: '5px', color: '#6b7280' }} />
-                                                {getLocationName(tarifa.id_origen_localizacion)} - {getLocationName(tarifa.id_destino_localizacion)}
+                                                {getLocationName(tarifa, 'origen')} - {getLocationName(tarifa, 'destino')}
                                             </td>
                                             <td className="table-td" data-label="Servicio/Carga:">
                                                 **{TipoServicioBackend[tarifa.tipo_servicio] || tarifa.tipo_servicio}**<br />

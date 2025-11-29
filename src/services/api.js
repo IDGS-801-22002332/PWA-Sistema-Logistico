@@ -44,6 +44,7 @@ export async function apiGet(path, opts = {}) {
         'Content-Type': 'application/json',
         ...(opts.headers || {}),
     };
+    // Agregar token si existe, pero no es obligatorio
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(url, {

@@ -200,7 +200,10 @@ const Usuarios = () => {
 
         try {
             if (selectedUsuario) {
-                await api.apiPut(`/usuarios/${selectedUsuario.id_usuario}`, formData);
+                const dataToSend = { ...formData };
+                // Al editar, no enviar password si está vacío
+                if (!dataToSend.password) delete dataToSend.password;
+                await api.apiPut(`/usuarios/${selectedUsuario.id_usuario}`, dataToSend);
             } else {
                 await api.apiPost("/usuarios", formData);
             }

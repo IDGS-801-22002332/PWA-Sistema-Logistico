@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
     LogOut, Home, Users, Package, ClipboardList,
     Truck, FileText, UserCog, DollarSign,
-    BadgeCheck, Moon, Sun
+    BadgeCheck, Moon, Sun, MapPin
 } from 'lucide-react';
 
 import '../components/panel.css';
@@ -91,6 +91,11 @@ const AppLayout = ({ children, activeLink }) => {
                     <a href="/tarifas" className={isActive('/tarifas')}>
                         <DollarSign className="nav-icon" />
                         <span>Tarifas</span>
+                    </a>
+
+                    <a href="/localizaciones" className={isActive('/localizaciones')}>
+                        <MapPin className="nav-icon" />
+                        <span>Localizaciones</span>
                     </a>
 
                     <a href="/usuarios" className={isActive('/usuarios')}>
