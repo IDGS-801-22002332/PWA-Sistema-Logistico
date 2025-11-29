@@ -73,6 +73,11 @@ const AppLayout = ({ children, activeLink }) => {
 
                     <span className="nav-section-title">Maestros</span>
 
+                    <a href="/usuarios" className={isActive('/usuarios')}>
+                        <UserCog className="nav-icon" />
+                        <span>Usuarios</span>
+                    </a>
+
                     <a href="/agentes" className={isActive('/agentes')}>
                         <BadgeCheck className="nav-icon" />
                         <span>Agentes</span>
@@ -98,13 +103,15 @@ const AppLayout = ({ children, activeLink }) => {
                         <span>Localizaciones</span>
                     </a>
 
-                    <a href="/usuarios" className={isActive('/usuarios')}>
-                        <UserCog className="nav-icon" />
-                        <span>Usuarios</span>
-                    </a>
+
 
                     <span className="nav-section-title">Operaciones</span>
 
+                    <a href="/solicitudes" className={isActive('/solicitudes')}>
+                        <Package className="nav-icon" />
+                        <span>Solicitudes</span>
+                    </a>
+                    
                     <a href="/cotizaciones" className={isActive('/cotizaciones')}>
                         <FileText className="nav-icon" />
                         <span>Cotizaciones</span>
@@ -115,10 +122,6 @@ const AppLayout = ({ children, activeLink }) => {
                         <span>Operaciones</span>
                     </a>
 
-                    <a href="/solicitudes" className={isActive('/solicitudes')}>
-                        <Package className="nav-icon" />
-                        <span>Solicitudes</span>
-                    </a>
 
                 </nav>
 

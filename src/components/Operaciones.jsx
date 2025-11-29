@@ -26,7 +26,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from "../services/api.js";
 
 const TipoServicioDisplay = {
     MARITIMO: "Marítimo",
-    AEREO: "Aéreo",
+    AEREO: "aereo",
     TERRESTRE: "Terrestre",
 };
 const IncotermDisplay = { FOB: "FOB", CIF: "CIF", DDP: "DDP", EXW: "EXW" };
@@ -240,9 +240,9 @@ export const OperacionForm = ({
                         onChange={handleFormChange}
                         className="form-select"
                     >
-                        <option value="MARITIMO">Marítimo</option>
-                        <option value="AEREO">Aéreo</option>
-                        <option value="TERRESTRE">Terrestre</option>
+                        <option value="maritimo">Marítimo</option>
+                        <option value="aereo">Aéreo</option>
+                        <option value="terrestre">Terrestre</option>
                     </select>
                 </div>
 
@@ -715,7 +715,7 @@ const initialOperacionForm = {
     cliente_nombre: "",
     usuario_ventas_nombre: "",
     usuario_operativo_nombre: "",
-    tipo_servicio: "MARITIMO",
+    tipo_servicio: "maritimo",
     incoterm: "FOB",
     origen_nombre: "",
     destino_nombre: "",
@@ -749,6 +749,8 @@ const Operaciones = () => {
                         usuario_operativo_nombre:
                             op.usuario_operativo?.nombre || "N/A",
                     }));
+                    // Ordenar por ID ascendente (menor ID primero)
+                    enrichedOps.sort((a, b) => a.id_operacion - b.id_operacion);
                     setOperaciones(enrichedOps);
                 }
             } catch (err) {
@@ -782,7 +784,7 @@ const Operaciones = () => {
                     usuario_operativo_nombre:
                         prefillData.usuario_operativo_nombre || "",
                     tipo_servicio:
-                        prefillData.tipo_servicio?.toUpperCase() || "MARITIMO", // Convertir a mayúsculas
+                        prefillData.tipo_servicio?.toLowerCase() || "maritimo", // Convertir a minúsculas
                     incoterm: prefillData.incoterm || "FOB",
                     origen_nombre: prefillData.origen_nombre || "",
                     destino_nombre: prefillData.destino_nombre || "",
@@ -822,14 +824,7 @@ const Operaciones = () => {
                 localStorage.removeItem("operacion_prefill_data");
             }
         }
-
-        // También verificar si hay parámetro en la URL para abrir nuevo formulario
-        const urlParams = new URLSearchParams(window.location.search);
-        const action = urlParams.get("action");
-        if (action === "new" && !isFormOpen) {
-            setIsFormOpen(true);
-        }
-    }, [isFormOpen]);
+    }, []);
 
     const filteredOperaciones = useMemo(() => {
         if (!searchTerm) return operaciones;
@@ -878,7 +873,7 @@ const Operaciones = () => {
             id_agente: formData.id_agente
                 ? Number(formData.id_agente)
                 : undefined,
-            tipo_servicio: formData.tipo_servicio,
+            tipo_servicio: formData.tipo_servicio?.toLowerCase() || "terrestre",
             // tipo_carga is optional in DTO, use default FCL if not provided
             tipo_carga: formData.tipo_carga || "FCL",
             incoterm: formData.incoterm || "FOB",
@@ -930,6 +925,7 @@ const Operaciones = () => {
         setFormData(initialOperacionForm);
         setIsFormOpen(true);
         setIsDeleteOpen(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const openFormForEdit = (operacion) => {
@@ -940,7 +936,7 @@ const Operaciones = () => {
             cliente_nombre: operacion.cliente_nombre || "",
             usuario_ventas_nombre: operacion.usuario_ventas_nombre || "",
             usuario_operativo_nombre: operacion.usuario_operativo_nombre || "",
-            tipo_servicio: operacion.tipo_servicio || "MARITIMO",
+            tipo_servicio: operacion.tipo_servicio || "maritimo",
             incoterm: operacion.incoterm || "FOB",
             origen_nombre: operacion.origen_nombre || "",
             destino_nombre: operacion.destino_nombre || "",
@@ -950,9 +946,16 @@ const Operaciones = () => {
             fecha_llegada_estimada: operacion.fecha_llegada_estimada || "",
             estatus_operacion: operacion.estatus_operacion || "PENDIENTE_DOC",
             documentos_pendientes: operacion.documentos_pendientes || 0,
+            id_cliente: operacion.id_cliente,
+            id_usuario_operativo: operacion.id_usuario_operativo,
+            id_proveedor: operacion.id_proveedor,
+            id_agente: operacion.id_agente,
+            tipo_carga: operacion.tipo_carga || "FCL",
+            descripcion_mercancia: operacion.descripcion_mercancia || "",
         });
         setIsFormOpen(true);
         setIsDeleteOpen(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const openDeleteConfirm = (operacion) => {
