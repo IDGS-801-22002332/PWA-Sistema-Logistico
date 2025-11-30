@@ -283,6 +283,7 @@ const Solicitudes = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [expandedCards, setExpandedCards] = useState(new Set());
+    const [statusFilter, setStatusFilter] = useState("todas");
     
     // Estados para datos maestros
     const [clientes, setClientes] = useState([]);
@@ -407,9 +408,13 @@ const Solicitudes = () => {
     };
 
     const filteredSolicitudes = useMemo(() => {
-        if (!searchTerm) return solicitudes;
         return solicitudes.filter((s) => {
             if (!s) return false;
+            
+            // Filtrar por estatus primero
+            if (statusFilter !== 'todas' && s.estatus !== statusFilter) {
+                return false;
+            }
             
             const searchableText = [
                 s.id_solicitud || s.id || '',
@@ -422,7 +427,7 @@ const Solicitudes = () => {
             
             return searchableText.includes(searchTerm.toLowerCase());
         });
-    }, [solicitudes, searchTerm]);
+    }, [solicitudes, searchTerm, statusFilter]);
 
     const handleToggleExpanded = (solicitudId) => {
         setExpandedCards(prev => {
@@ -566,6 +571,17 @@ const Solicitudes = () => {
                             className="search-input"
                         />
                     </div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="form-select"
+                        style={{ flexShrink: 0, minWidth: '180px' }}
+                    >
+                        <option value="todas">Todas</option>
+                        <option value="nueva">Nueva</option>
+                        <option value="rechazada">Rechazada</option>
+                        <option value="cotizada">Cotizada</option>
+                    </select>
                 </div>
 
                 {/* LISTADO DE TARJETAS */}

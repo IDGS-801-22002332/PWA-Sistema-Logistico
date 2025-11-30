@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import AppLayout from '../Layout/AppLayout';
 import { MapPin, Flag, Plus, Edit, Trash2, Save, X, AlertTriangle } from 'lucide-react';
-import { apiGet, apiPost, apiPut, apiDelete } from '../services/api.js';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../services/api.js';
 import './localizaciones.css'; // Asumo que aquí está el CSS que definiste
 
 const initialPais = { nombre: '', iso2: '' };
@@ -31,8 +31,9 @@ const PaisesTab = () => {
     const submit = async (e) => {
         e.preventDefault();
         try {
-            const payload = { nombre_pais: form.nombre, codigo_iso2: form.iso2 };
-            if (selected) await apiPut(`/paises/${selected.id}`, payload);
+            // Backend espera los campos `nombre` e `iso2` (no nombre_pais ni codigo_iso2)
+            const payload = { nombre: form.nombre, iso2: form.iso2 };
+            if (selected) await apiPatch(`/paises/${selected.id}`, payload);
             else await apiPost('/paises', payload);
             setForm(initialPais);
             setSelected(null);
@@ -167,7 +168,7 @@ const LocalizacionesTab = () => {
                 nombre_ciudad: form.nombre_ciudad,
                 tipo_ubicacion: form.tipo_ubicacion,
             };
-            if (selected) await apiPut(`/localizaciones/${selected.id_localizacion}`, payload);
+            if (selected) await apiPatch(`/localizaciones/${selected.id_localizacion}`, payload);
             else await apiPost('/localizaciones', payload);
             setForm(initialLocal);
             setSelected(null);

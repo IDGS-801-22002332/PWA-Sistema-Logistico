@@ -324,7 +324,16 @@ const Tarifas = () => {
         fetchLocalizaciones();
     }, []);
 
-    const getProveedorName = (tarifa) => tarifa.proveedor?.nombre || 'N/A';
+    const getProveedorName = (tarifa) => {
+        // Varias formas en que el nombre puede venir desde la API: relación completa, campos planos o buscar en el hook de proveedores
+        if (tarifa.proveedor?.nombre) return tarifa.proveedor.nombre;
+        if (tarifa.proveedor?.nombre_empresa) return tarifa.proveedor.nombre_empresa;
+        if (tarifa.proveedor_nombre) return tarifa.proveedor_nombre;
+        // Buscar en el array de proveedores traído por el hook (puede existir como id o id_proveedor)
+        const found = proveedores?.find(p => Number(p.id) === Number(tarifa.id_proveedor));
+        if (found) return found.nombre;
+        return 'N/A';
+    };
     const getLocationName = (tarifa, field) => {
         if (field === 'origen') return tarifa.origen?.nombre_ciudad || 'N/A';
         if (field === 'destino') return tarifa.destino?.nombre_ciudad || 'N/A';
@@ -524,18 +533,18 @@ const Tarifas = () => {
                                     filteredTarifas.map((tarifa) => (
                                         <tr key={tarifa[ID_KEY]} className="table-row">
                                             <td className="table-td table-td-id" data-label="ID:">{tarifa[ID_KEY]}</td>
-                                            <td className="table-td table-td-name" data-label="Proveedor:">{getProveedorName(tarifa)}</td>
+                                            <td className="table-td table-td-name" data-label="Proveedor:"><strong>{getProveedorName(tarifa)}</strong></td>
                                             <td className="table-td" data-label="Ruta:">
                                                 <MapPin size={16} style={{ verticalAlign: 'middle', marginRight: '5px', color: '#6b7280' }} />
                                                 {getLocationName(tarifa, 'origen')} - {getLocationName(tarifa, 'destino')}
                                             </td>
                                             <td className="table-td" data-label="Servicio/Carga:">
-                                                **{TipoServicioBackend[tarifa.tipo_servicio] || tarifa.tipo_servicio}**<br />
+                                                <strong>{TipoServicioBackend[tarifa.tipo_servicio] || tarifa.tipo_servicio}</strong><br />
                                                 <span className="table-td-email">{TipoCarga[tarifa.tipo_carga]}</span>
                                             </td>
                                             <td className="table-td" data-label="Incoterm:">{Incoterm[tarifa.incoterm]}</td>
                                             <td className="table-td" data-label="Precio Base:">
-                                                **{tarifa.precio_base}** {tarifa.moneda}
+                                                {tarifa.precio_base} {tarifa.moneda}
                                             </td>
                                             <td className="table-td table-td-date" data-label="Vigencia:">
                                                 {tarifa.fecha_vigencia_inicio.substring(0, 10)} a {tarifa.fecha_vigencia_fin.substring(0, 10)}

@@ -748,26 +748,41 @@ const FacturasSection = ({ cotizacionId, facturas, onRefreshFacturas, showNotifi
         });
     };
 
+    // Mostrar encabezado incluso si no hay facturas, para mantener consistencia visual
     if (facturasRelacionadas.length === 0 && !creatingFactura) {
         return (
-            <div style={{ 
-                padding: '1.5rem', 
-                textAlign: 'center', 
-                backgroundColor: 'var(--light-bg)', 
-                borderRadius: '8px',
-                border: '1px dashed var(--text-secondary)'
-            }}>
-                <Receipt size={48} style={{ color: 'var(--text-secondary)', margin: '0 auto 1rem' }} />
-                <p style={{ color: 'var(--text-secondary)', margin: '0 0 1.5rem 0' }}>
-                    No hay facturas asociadas a esta cotización
-                </p>
-                <button 
-                    onClick={handleCreateFactura} 
-                    className="btn btn-primary"
-                    style={{ fontSize: '0.9rem', padding: '0.6rem 1.2rem' }}
-                >
-                    <Plus size={18} /> Crear Primera Factura
-                </button>
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '0.75rem 1rem',
+                    backgroundColor: 'var(--light-bg)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--text-secondary)'
+                }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        0 Facturas
+                    </span>
+                    <button 
+                        onClick={handleCreateFactura} 
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.9rem', padding: '0.6rem 1.2rem' }}
+                    >
+                        <Plus size={18} /> Nueva Factura
+                    </button>
+                </div>
+
+                <div style={{ 
+                    padding: '1.25rem',
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px'
+                }}>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                        No hay facturas asociadas a esta cotización
+                    </p>
+                </div>
             </div>
         );
     }
@@ -1811,7 +1826,1220 @@ const DocumentosSection = ({ cotizacionId, documentos, onRefreshDocumentos, show
     );
 };
 
-const CotizacionCard = ({ cotizacion, onAction, isExpanded, onToggleExpand, facturas = [], loadFacturas, documentos = [], loadDocumentos, showNotification }) => {
+// DEMORAS SECTION COMPONENT
+const DemorasSection = ({ cotizacionId, operacionId, demoras = [], onRefreshDemoras, showNotification, cotizacion }) => {
+    const [creatingDemora, setCreatingDemora] = useState(false);
+    const [savingNewDemora, setSavingNewDemora] = useState(false);
+    const [demoraToDelete, setDemoraToDelete] = useState(null);
+    const [deletingDemora, setDeletingDemora] = useState(null);
+    const [newDemoraForm, setNewDemoraForm] = useState({
+        tipo_demora: 'climatica',
+        fecha_hora_demora: '',
+        descripcion_demora: '',
+        costo_asociado: '',
+        moneda: 'USD'
+    });
+
+    // Filtrar demoras para esta operación (demoras están vinculadas a operación, no a cotización)
+    // Usar coerción numérica para evitar mismatches entre strings y números devueltos por el API
+    const demorasRelacionadas = demoras.filter(demora => 
+        Number(demora.id_operacion) === Number(operacionId)
+    );
+
+    const handleDeleteDemora = (demora) => {
+        setDemoraToDelete(demora);
+    };
+
+    const confirmDeleteDemora = async () => {
+        if (!demoraToDelete) return;
+        
+            try {
+            setDeletingDemora(demoraToDelete.id_demora);
+            await apiDelete(`/demoras/${demoraToDelete.id_demora}`);
+            
+            onRefreshDemoras();
+            showNotification('success', 'Demora eliminada correctamente');
+        } catch (error) {
+            console.error('Error eliminando demora:', error);
+            showNotification('error', 'Error al eliminar demora');
+        } finally {
+            setDeletingDemora(null);
+            setDemoraToDelete(null);
+        }
+    };
+
+    const cancelDeleteDemora = () => {
+        setDemoraToDelete(null);
+    };
+
+    const handleCreateNewDemora = () => {
+        setCreatingDemora(true);
+    };
+
+    const handleSaveNewDemora = async () => {
+        try {
+            if (!newDemoraForm.fecha_hora_demora.trim() || !newDemoraForm.descripcion_demora.trim()) {
+                showNotification('error', 'Por favor complete todos los campos requeridos');
+                return;
+            }
+
+            // Validación: requiere operación asociada
+            if (!operacionId) {
+                showNotification('error', 'No hay operación asociada a esta cotización. Genera la operación antes de registrar demoras.');
+                return;
+            }
+
+            setSavingNewDemora(true);
+
+            const payload = {
+                id_operacion: operacionId,
+                tipo_demora: newDemoraForm.tipo_demora,
+                fecha_hora_demora: newDemoraForm.fecha_hora_demora.trim(),
+                descripcion_demora: newDemoraForm.descripcion_demora.trim(),
+                costo_asociado: newDemoraForm.costo_asociado ? parseFloat(newDemoraForm.costo_asociado) : 0,
+                moneda: newDemoraForm.moneda
+            };
+
+            console.log('Creando nueva demora:', payload);
+            await apiPost('/demoras', payload);
+            
+            onRefreshDemoras();
+            showNotification('success', 'Demora registrada correctamente');
+            
+            setNewDemoraForm({
+                tipo_demora: 'climatica',
+                fecha_hora_demora: '',
+                descripcion_demora: '',
+                costo_asociado: '',
+                moneda: 'USD'
+            });
+            setCreatingDemora(false);
+        } catch (error) {
+            console.error('Error creando demora:', error);
+            showNotification('error', 'Error al registrar demora');
+        } finally {
+            setSavingNewDemora(false);
+        }
+    };
+
+    const handleCancelNewDemora = () => {
+        setNewDemoraForm({
+            tipo_demora: 'climatica',
+            fecha_hora_demora: '',
+            descripcion_demora: '',
+            costo_asociado: '',
+            moneda: 'USD'
+        });
+        setCreatingDemora(false);
+    };
+
+    // Mostrar estado vacío cuando no hay demoras y no se está creando una nueva
+    if (demorasRelacionadas.length === 0 && !creatingDemora) {
+        return (
+            <div style={{ 
+                marginTop: '0.5rem',
+                padding: '0',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '0'
+            }}>
+                <div style={{ 
+                    marginTop: '0.5rem',
+                    padding: '1.5rem',
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
+                    <p style={{ 
+                        margin: 0, 
+                        color: 'var(--text-secondary)',
+                        fontStyle: 'italic',
+                        flex: 1
+                    }}>
+                        {operacionId ? 'No hay demoras registradas para esta operación' : 'No hay operación asociada a esta cotización'}
+                    </p>
+                    <button 
+                        className="btn btn-primary" 
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginLeft: '1rem', whiteSpace: 'nowrap' }}
+                        onClick={handleCreateNewDemora}
+                    >
+                        <Plus size={16} /> Registrar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ 
+            marginTop: '0.5rem',
+            padding: '0',
+            backgroundColor: 'transparent',
+            border: 'none'
+        }}>
+            {/* Banner de confirmación de eliminación */}
+            {demoraToDelete && (
+                <div style={{
+                    backgroundColor: 'var(--danger-bg)',
+                    border: '1px solid var(--danger)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <AlertTriangle size={20} color="var(--danger)" />
+                        <span style={{ color: 'var(--text-primary)' }}>¿Eliminar demora del {formatDate(demoraToDelete.fecha_hora_demora)}?</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                            className="btn btn-danger" 
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                            onClick={confirmDeleteDemora}
+                            disabled={deletingDemora === demoraToDelete.id_demora}
+                        >
+                            {deletingDemora === demoraToDelete.id_demora ? 'Eliminando...' : 'Sí, eliminar'}
+                        </button>
+                        <button 
+                            className="btn btn-secondary" 
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                            onClick={cancelDeleteDemora}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Encabezado con botón de agregar demora */}
+            {demorasRelacionadas.length > 0 && !creatingDemora && (
+                <div style={{ 
+                    marginTop: '0.5rem',
+                    padding: '1rem 1.5rem',
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px 8px 0 0',
+                    borderBottom: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
+                    <h4 style={{ 
+                        margin: 0,
+                        color: 'var(--text-primary)',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        {demorasRelacionadas.length} Demora{demorasRelacionadas.length !== 1 ? 's' : ''}
+                    </h4>
+                    <button 
+                        className="btn btn-primary" 
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                        onClick={handleCreateNewDemora}
+                        disabled={demoraToDelete}
+                    >
+                        <Plus size={16} /> Agregar
+                    </button>
+                </div>
+            )}
+
+            {/* Formulario para crear nueva demora */}
+            {creatingDemora && (
+                <div style={{
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '1.5rem',
+                    marginTop: '0.5rem'
+                }}>
+                    <h5 style={{ 
+                        margin: '0 0 1rem 0',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        ⏱ Nueva Demora
+                    </h5>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Tipo de demora *
+                            </label>
+                            <select
+                                value={newDemoraForm.tipo_demora}
+                                onChange={(e) => setNewDemoraForm(prev => ({ 
+                                    ...prev, 
+                                    tipo_demora: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            >
+                                <option value="climatica">Climática</option>
+                                <option value="aduana">Aduana</option>
+                                <option value="mecanica">Mecánica</option>
+                                <option value="documental">Documental</option>
+                                <option value="trafico">Tráfico</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Fecha y hora de demora *
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={newDemoraForm.fecha_hora_demora}
+                                onChange={(e) => setNewDemoraForm(prev => ({ 
+                                    ...prev, 
+                                    fecha_hora_demora: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Descripción de la demora *
+                            </label>
+                            <textarea
+                                value={newDemoraForm.descripcion_demora}
+                                onChange={(e) => setNewDemoraForm(prev => ({ 
+                                    ...prev, 
+                                    descripcion_demora: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)',
+                                    minHeight: '80px',
+                                    fontFamily: 'inherit'
+                                }}
+                                placeholder="Detalle la razón y los detalles de la demora"
+                            />
+                        </div>
+
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Costo asociado
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newDemoraForm.costo_asociado}
+                                onChange={(e) => setNewDemoraForm(prev => ({ 
+                                    ...prev, 
+                                    costo_asociado: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                                placeholder="0.00"
+                            />
+                        </div>
+
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Moneda
+                            </label>
+                            <select
+                                value={newDemoraForm.moneda}
+                                onChange={(e) => setNewDemoraForm(prev => ({ 
+                                    ...prev, 
+                                    moneda: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            >
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="MXN">MXN</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'flex-end', 
+                        gap: '0.75rem',
+                        marginTop: '1.5rem',
+                        paddingTop: '1rem',
+                        borderTop: '1px solid var(--border-color)'
+                    }}>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={handleCancelNewDemora}
+                            disabled={savingNewDemora}
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                        >
+                            <X size={16} /> Cancelar
+                        </button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleSaveNewDemora}
+                            disabled={savingNewDemora || !newDemoraForm.fecha_hora_demora.trim() || !newDemoraForm.descripcion_demora.trim()}
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                        >
+                            {savingNewDemora ? (
+                                <>Guardando...</>
+                            ) : (
+                                <><Save size={16} /> Registrar Demora</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Lista de demoras */}
+            <div style={{
+                marginTop: '0.5rem',
+                backgroundColor: 'var(--card-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: demorasRelacionadas.length > 0 && !creatingDemora ? '0 0 8px 8px' : '8px',
+                overflow: 'hidden'
+            }}>
+            {demorasRelacionadas.map((demora, index) => {
+                return (
+                    <div 
+                        key={demora.id_demora}
+                        style={{
+                            backgroundColor: 'var(--card-bg)',
+                            border: 'none',
+                            borderBottom: index < demorasRelacionadas.length - 1 ? '1px solid var(--border-color)' : 'none',
+                            borderRadius: '0',
+                            padding: '1.5rem',
+                            marginBottom: 0,
+                            opacity: deletingDemora === demora.id_demora ? 0.6 : 1,
+                            transition: 'opacity 0.2s ease'
+                        }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '1rem'
+                        }}>
+                            <div style={{
+                                padding: '0.75rem',
+                                backgroundColor: 'var(--input-bg)',
+                                borderRadius: '8px',
+                                color: 'var(--text-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                ⏱
+                            </div>
+
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <h5 style={{ 
+                                        margin: 0,
+                                        color: 'var(--text-primary)',
+                                        fontSize: '1.1rem',
+                                        textTransform: 'capitalize'
+                                    }}>
+                                        {demora.tipo_demora || 'Demora'}
+                                    </h5>
+                                </div>
+
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                    gap: '1rem',
+                                    marginTop: '1rem'
+                                }}>
+                                    <div>
+                                        <span style={{ 
+                                            fontWeight: '500',
+                                            color: 'var(--text-secondary)',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            Fecha y hora:
+                                        </span>
+                                        <p style={{ 
+                                            margin: '0.25rem 0 0 0',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            {formatDate(demora.fecha_hora_demora)}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <span style={{ 
+                                            fontWeight: '500',
+                                            color: 'var(--text-secondary)',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            Tipo:
+                                        </span>
+                                        <p style={{ 
+                                            margin: '0.25rem 0 0 0',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.9rem',
+                                            textTransform: 'capitalize'
+                                        }}>
+                                            {demora.tipo_demora || 'No especificado'}
+                                        </p>
+                                    </div>
+
+                                    {demora.costo_asociado > 0 && (
+                                        <div>
+                                            <span style={{ 
+                                                fontWeight: '500',
+                                                color: 'var(--text-secondary)',
+                                                fontSize: '0.85rem'
+                                            }}>
+                                                Costo:
+                                            </span>
+                                            <p style={{ 
+                                                margin: '0.25rem 0 0 0',
+                                                color: 'var(--danger)',
+                                                fontSize: '0.9rem',
+                                                fontWeight: 600
+                                            }}>
+                                                {demora.moneda || 'USD'} {demora.costo_asociado?.toFixed(2) || '0.00'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ marginTop: '1rem' }}>
+                                    <span style={{ 
+                                        fontWeight: '500',
+                                        color: 'var(--text-secondary)',
+                                        fontSize: '0.85rem'
+                                    }}>
+                                        Descripción:
+                                    </span>
+                                    <p style={{ 
+                                        margin: '0.25rem 0 0 0',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '0.9rem',
+                                        lineHeight: 1.5
+                                    }}>
+                                        {demora.descripcion_demora}
+                                    </p>
+                                </div>
+
+                                <div style={{
+                                    marginTop: '1.5rem',
+                                    paddingTop: '1rem',
+                                    borderTop: '1px solid var(--border-color)',
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    gap: '0.75rem'
+                                }}>
+                                    <button
+                                        className="btn btn-danger"
+                                        style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                                        onClick={() => handleDeleteDemora(demora)}
+                                        disabled={deletingDemora === demora.id_demora || demoraToDelete || creatingDemora}
+                                    >
+                                        <Trash2 size={16} /> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+            </div>
+        </div>
+    );
+};
+
+// INCIDENCIAS SECTION COMPONENT
+const IncidenciasSection = ({ cotizacionId, operacionId, incidencias = [], onRefreshIncidencias, showNotification, cotizacion }) => {
+    const [creatingIncidencia, setCreatingIncidencia] = useState(false);
+    const [savingNewIncidencia, setSavingNewIncidencia] = useState(false);
+    const [incidenciaToDelete, setIncidenciaToDelete] = useState(null);
+    const [deletingIncidencia, setDeletingIncidencia] = useState(null);
+    const [newIncidenciaForm, setNewIncidenciaForm] = useState({
+        tipo_incidencia: 'daño_mercancia',
+        estatus: 'reportada',
+        fecha_hora_incidencia: '',
+        fecha_resolucion: '',
+        comentarios_resolucion: ''
+    });
+
+    const incidenciasRelacionadas = incidencias.filter(incidencia => 
+        Number(incidencia.id_operacion) === Number(operacionId)
+    );
+
+    const handleDeleteIncidencia = (incidencia) => {
+        setIncidenciaToDelete(incidencia);
+    };
+
+    const confirmDeleteIncidencia = async () => {
+        if (!incidenciaToDelete) return;
+        
+        try {
+            setDeletingIncidencia(incidenciaToDelete.id_incidencia);
+            await apiDelete(`/incidencias/${incidenciaToDelete.id_incidencia}`);
+            
+            onRefreshIncidencias();
+            showNotification('success', 'Incidencia eliminada correctamente');
+        } catch (error) {
+            console.error('Error eliminando incidencia:', error);
+            showNotification('error', 'Error al eliminar incidencia');
+        } finally {
+            setDeletingIncidencia(null);
+            setIncidenciaToDelete(null);
+        }
+    };
+
+    const cancelDeleteIncidencia = () => {
+        setIncidenciaToDelete(null);
+    };
+
+    const handleCreateNewIncidencia = () => {
+        setCreatingIncidencia(true);
+    };
+
+    const handleSaveNewIncidencia = async () => {
+        try {
+            if (!newIncidenciaForm.fecha_hora_incidencia.trim()) {
+                showNotification('error', 'Por favor complete la fecha de la incidencia');
+                return;
+            }
+
+            // Validación: requiere operación asociada
+            if (!operacionId) {
+                showNotification('error', 'No hay operación asociada a esta cotización. Genera la operación antes de reportar incidencias.');
+                return;
+            }
+
+            setSavingNewIncidencia(true);
+
+            const payload = {
+                id_operacion: operacionId,
+                tipo_incidencia: newIncidenciaForm.tipo_incidencia,
+                estatus: newIncidenciaForm.estatus,
+                fecha_hora_incidencia: newIncidenciaForm.fecha_hora_incidencia.trim(),
+                fecha_resolucion: newIncidenciaForm.fecha_resolucion.trim() || null,
+                comentarios_resolucion: newIncidenciaForm.comentarios_resolucion.trim() || null
+            };
+
+            console.log('Creando nueva incidencia:', payload);
+            await apiPost('/incidencias', payload);
+            
+            onRefreshIncidencias();
+            showNotification('success', 'Incidencia registrada correctamente');
+            
+            setNewIncidenciaForm({
+                tipo_incidencia: 'daño_mercancia',
+                estatus: 'reportada',
+                fecha_hora_incidencia: '',
+                fecha_resolucion: '',
+                comentarios_resolucion: ''
+            });
+            setCreatingIncidencia(false);
+        } catch (error) {
+            console.error('Error creando incidencia:', error);
+            showNotification('error', 'Error al registrar incidencia');
+        } finally {
+            setSavingNewIncidencia(false);
+        }
+    };
+
+    const handleCancelNewIncidencia = () => {
+        setNewIncidenciaForm({
+            tipo_incidencia: 'daño_mercancia',
+            estatus: 'reportada',
+            fecha_hora_incidencia: '',
+            fecha_resolucion: '',
+            comentarios_resolucion: ''
+        });
+        setCreatingIncidencia(false);
+    };
+
+    if (incidenciasRelacionadas.length === 0 && !creatingIncidencia) {
+        return (
+            <div style={{ 
+                marginTop: '0.5rem',
+                padding: '0',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '0'
+            }}>
+                <div style={{ 
+                    marginTop: '0.5rem',
+                    padding: '1.5rem',
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
+                    <p style={{ 
+                        margin: 0, 
+                        color: 'var(--text-secondary)',
+                        fontStyle: 'italic',
+                        flex: 1
+                    }}>
+                        {operacionId ? 'No hay incidencias registradas para esta operación' : 'No hay operación asociada a esta cotización'}
+                    </p>
+                    <button 
+                        className="btn btn-primary" 
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginLeft: '1rem', whiteSpace: 'nowrap' }}
+                        onClick={handleCreateNewIncidencia}
+                    >
+                        <Plus size={16} /> Reportar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ 
+            marginTop: '0.5rem',
+            padding: '0',
+            backgroundColor: 'transparent',
+            border: 'none'
+        }}>
+            {/* Banner de confirmación de eliminación */}
+            {incidenciaToDelete && (
+                <div style={{
+                    backgroundColor: 'var(--danger-bg)',
+                    border: '1px solid var(--danger)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <AlertTriangle size={20} color="var(--danger)" />
+                        <span style={{ color: 'var(--text-primary)' }}>¿Eliminar incidencia del {formatDate(incidenciaToDelete.fecha_hora_incidencia)}?</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                            className="btn btn-danger" 
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                            onClick={confirmDeleteIncidencia}
+                            disabled={deletingIncidencia === incidenciaToDelete.id_incidencia}
+                        >
+                            {deletingIncidencia === incidenciaToDelete.id_incidencia ? 'Eliminando...' : 'Sí, eliminar'}
+                        </button>
+                        <button 
+                            className="btn btn-secondary" 
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                            onClick={cancelDeleteIncidencia}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Encabezado con botón de agregar incidencia */}
+            {incidenciasRelacionadas.length > 0 && !creatingIncidencia && (
+                <div style={{ 
+                    marginTop: '0.5rem',
+                    padding: '1rem 1.5rem',
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px 8px 0 0',
+                    borderBottom: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                }}>
+                    <h4 style={{ 
+                        margin: 0,
+                        color: 'var(--text-primary)',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        {incidenciasRelacionadas.length} Incidencia{incidenciasRelacionadas.length !== 1 ? 's' : ''}
+                    </h4>
+                    {operacionId && (
+                        <button 
+                            className="btn btn-primary" 
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                            onClick={handleCreateNewIncidencia}
+                            disabled={incidenciaToDelete}
+                        >
+                            <Plus size={16} /> Agregar
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Formulario para crear nueva incidencia */}
+            {creatingIncidencia && (
+                <div style={{
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '1.5rem',
+                    marginTop: '0.5rem'
+                }}>
+                    <h5 style={{ 
+                        margin: '0 0 1rem 0',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        ⚠ Nueva Incidencia
+                    </h5>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Tipo de incidencia *
+                            </label>
+                            <select
+                                value={newIncidenciaForm.tipo_incidencia}
+                                onChange={(e) => setNewIncidenciaForm(prev => ({ 
+                                    ...prev, 
+                                    tipo_incidencia: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            >
+                                <option value="daño_mercancia">Daño de Mercancía</option>
+                                <option value="extravio_parcial">Extravío Parcial</option>
+                                <option value="extravio_total">Extravío Total</option>
+                                <option value="robo">Robo</option>
+                                <option value="error_documentacion">Error en Documentación</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Estatus *
+                            </label>
+                            <select
+                                value={newIncidenciaForm.estatus}
+                                onChange={(e) => setNewIncidenciaForm(prev => ({ 
+                                    ...prev, 
+                                    estatus: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            >
+                                <option value="reportada">Reportada</option>
+                                <option value="en_revision">En Revisión</option>
+                                <option value="resuelta">Resuelta</option>
+                                <option value="escalada">Escalada</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Fecha y hora de incidencia *
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={newIncidenciaForm.fecha_hora_incidencia}
+                                onChange={(e) => setNewIncidenciaForm(prev => ({ 
+                                    ...prev, 
+                                    fecha_hora_incidencia: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Fecha de resolución
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={newIncidenciaForm.fecha_resolucion}
+                                onChange={(e) => setNewIncidenciaForm(prev => ({ 
+                                    ...prev, 
+                                    fecha_resolucion: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ 
+                                display: 'block',
+                                marginBottom: '0.5rem',
+                                fontWeight: '500',
+                                color: 'var(--text-primary)'
+                            }}>
+                                Comentarios de resolución
+                            </label>
+                            <textarea
+                                value={newIncidenciaForm.comentarios_resolucion}
+                                onChange={(e) => setNewIncidenciaForm(prev => ({ 
+                                    ...prev, 
+                                    comentarios_resolucion: e.target.value 
+                                }))}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    backgroundColor: 'var(--input-bg)',
+                                    color: 'var(--text-primary)',
+                                    minHeight: '80px',
+                                    fontFamily: 'inherit'
+                                }}
+                                placeholder="Describa cómo se resolvió o se está resolviendo la incidencia"
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'flex-end', 
+                        gap: '0.75rem',
+                        marginTop: '1.5rem',
+                        paddingTop: '1rem',
+                        borderTop: '1px solid var(--border-color)'
+                    }}>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={handleCancelNewIncidencia}
+                            disabled={savingNewIncidencia}
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                        >
+                            <X size={16} /> Cancelar
+                        </button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleSaveNewIncidencia}
+                            disabled={savingNewIncidencia || !newIncidenciaForm.fecha_hora_incidencia.trim()}
+                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                        >
+                            {savingNewIncidencia ? (
+                                <>Guardando...</>
+                            ) : (
+                                <><Save size={16} /> Reportar Incidencia</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Lista de incidencias */}
+            <div style={{
+                marginTop: '0.5rem',
+                backgroundColor: 'var(--card-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: incidenciasRelacionadas.length > 0 && !creatingIncidencia ? '0 0 8px 8px' : '8px',
+                overflow: 'hidden'
+            }}>
+            {incidenciasRelacionadas.map((incidencia, index) => {
+                const getEstatusColor = (estatus) => {
+                    switch(estatus) {
+                        case 'reportada': return 'var(--warning)';
+                        case 'en_revision': return 'var(--info)';
+                        case 'resuelta': return 'var(--success)';
+                        case 'escalada': return 'var(--danger)';
+                        default: return 'var(--text-secondary)';
+                    }
+                };
+
+                const getEstatusDisplay = (estatus) => {
+                    switch(estatus) {
+                        case 'reportada': return 'Reportada';
+                        case 'en_revision': return 'En Revisión';
+                        case 'resuelta': return 'Resuelta';
+                        case 'escalada': return 'Escalada';
+                        default: return estatus;
+                    }
+                };
+
+                return (
+                    <div 
+                        key={incidencia.id_incidencia}
+                        style={{
+                            backgroundColor: 'var(--card-bg)',
+                            border: 'none',
+                            borderBottom: index < incidenciasRelacionadas.length - 1 ? '1px solid var(--border-color)' : 'none',
+                            borderRadius: '0',
+                            padding: '1.5rem',
+                            marginBottom: 0,
+                            opacity: deletingIncidencia === incidencia.id_incidencia ? 0.6 : 1,
+                            transition: 'opacity 0.2s ease'
+                        }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '1rem'
+                        }}>
+                            <div style={{
+                                padding: '0.75rem',
+                                backgroundColor: 'var(--input-bg)',
+                                borderRadius: '8px',
+                                color: getEstatusColor(incidencia.estatus),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.5rem'
+                            }}>
+                                ⚠
+                            </div>
+
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <h5 style={{ 
+                                        margin: 0,
+                                        color: 'var(--text-primary)',
+                                        fontSize: '1.1rem',
+                                        textTransform: 'capitalize'
+                                    }}>
+                                        {incidencia.tipo_incidencia || 'Incidencia'}
+                                    </h5>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '0.25rem 0.75rem',
+                                        backgroundColor: getEstatusColor(incidencia.estatus),
+                                        color: '#fff',
+                                        borderRadius: '20px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase'
+                                    }}>
+                                        {getEstatusDisplay(incidencia.estatus)}
+                                    </span>
+                                </div>
+
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                    gap: '1rem',
+                                    marginTop: '1rem'
+                                }}>
+                                    <div>
+                                        <span style={{ 
+                                            fontWeight: '500',
+                                            color: 'var(--text-secondary)',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            Fecha de incidencia:
+                                        </span>
+                                        <p style={{ 
+                                            margin: '0.25rem 0 0 0',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            {formatDate(incidencia.fecha_hora_incidencia)}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <span style={{ 
+                                            fontWeight: '500',
+                                            color: 'var(--text-secondary)',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            Tipo:
+                                        </span>
+                                        <p style={{ 
+                                            margin: '0.25rem 0 0 0',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.9rem',
+                                            textTransform: 'capitalize'
+                                        }}>
+                                            {incidencia.tipo_incidencia || 'No especificado'}
+                                        </p>
+                                    </div>
+
+                                    {incidencia.fecha_resolucion && (
+                                        <div>
+                                            <span style={{ 
+                                                fontWeight: '500',
+                                                color: 'var(--text-secondary)',
+                                                fontSize: '0.85rem'
+                                            }}>
+                                                Fecha de resolución:
+                                            </span>
+                                            <p style={{ 
+                                                margin: '0.25rem 0 0 0',
+                                                color: 'var(--text-primary)',
+                                                fontSize: '0.9rem'
+                                            }}>
+                                                {formatDate(incidencia.fecha_resolucion)}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {incidencia.comentarios_resolucion && (
+                                    <div style={{ marginTop: '1rem' }}>
+                                        <span style={{ 
+                                            fontWeight: '500',
+                                            color: 'var(--text-secondary)',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            Comentarios:
+                                        </span>
+                                        <p style={{ 
+                                            margin: '0.25rem 0 0 0',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.9rem',
+                                            lineHeight: 1.5
+                                        }}>
+                                            {incidencia.comentarios_resolucion}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div style={{
+                                    marginTop: '1.5rem',
+                                    paddingTop: '1rem',
+                                    borderTop: '1px solid var(--border-color)',
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    gap: '0.75rem'
+                                }}>
+                                    <button
+                                        className="btn btn-danger"
+                                        style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                                        onClick={() => handleDeleteIncidencia(incidencia)}
+                                        disabled={deletingIncidencia === incidencia.id_incidencia || incidenciaToDelete || creatingIncidencia}
+                                    >
+                                        <Trash2 size={16} /> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+            </div>
+        </div>
+    );
+};
+
+const CotizacionCard = ({ cotizacion, onAction, isExpanded, onToggleExpand, facturas = [], loadFacturas, documentos = [], loadDocumentos, demoras = [], loadDemoras, incidencias = [], loadIncidencias, showNotification }) => {
     // Validación de datos y valores por defecto
     if (!cotizacion) return null;
     
@@ -2101,6 +3329,36 @@ const CotizacionCard = ({ cotizacion, onAction, isExpanded, onToggleExpand, fact
                             />
                         </div>
 
+                        {/* Sección de Demoras */}
+                        <div style={{ marginBottom: '2rem' }}>
+                            <h5 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--warning)', marginBottom: '1rem', borderBottom: '2px solid var(--warning)', paddingBottom: '0.5rem' }}>
+                                ⏱ Demoras
+                            </h5>
+                            <DemorasSection 
+                                cotizacionId={cotizacion.id_cotizacion || cotizacion.id}
+                                operacionId={cotizacion.id_operacion}
+                                demoras={demoras || []}
+                                onRefreshDemoras={loadDemoras}
+                                showNotification={showNotification}
+                                cotizacion={cotizacion}
+                            />
+                        </div>
+
+                        {/* Sección de Incidencias */}
+                        <div style={{ marginBottom: '2rem' }}>
+                            <h5 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--danger)', marginBottom: '1rem', borderBottom: '2px solid var(--danger)', paddingBottom: '0.5rem' }}>
+                                ⚠ Incidencias
+                            </h5>
+                            <IncidenciasSection 
+                                cotizacionId={cotizacion.id_cotizacion || cotizacion.id}
+                                operacionId={cotizacion.id_operacion}
+                                incidencias={incidencias || []}
+                                onRefreshIncidencias={loadIncidencias}
+                                showNotification={showNotification}
+                                cotizacion={cotizacion}
+                            />
+                        </div>
+
                         {/* Botones de acción en vista expandida */}
                         <div style={{ 
                             padding: '1rem', 
@@ -2206,6 +3464,7 @@ const Cotizaciones = () => {
     
     const [cotizaciones, setCotizaciones] = useState(initialCotizaciones);
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("todas");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [expandedCard, setExpandedCard] = useState(null);
@@ -2226,6 +3485,14 @@ const Cotizaciones = () => {
     // Estados para documentos
     const [documentos, setDocumentos] = useState([]);
     const [loadingDocumentos, setLoadingDocumentos] = useState(false);
+    
+    // Estados para demoras
+    const [demoras, setDemoras] = useState([]);
+    const [loadingDemoras, setLoadingDemoras] = useState(false);
+    
+    // Estados para incidencias
+    const [incidencias, setIncidencias] = useState([]);
+    const [loadingIncidencias, setLoadingIncidencias] = useState(false);
     
     // Funciones para mostrar notificaciones
     const showNotification = (type, message) => {
@@ -2272,6 +3539,38 @@ const Cotizaciones = () => {
         }
     };
 
+    // Función para cargar demoras
+    const loadDemoras = async () => {
+        setLoadingDemoras(true);
+        try {
+            const demorasData = await apiGet('/demoras');
+            if (Array.isArray(demorasData)) {
+                setDemoras(demorasData);
+            }
+        } catch (err) {
+            console.error('Error cargando demoras:', err);
+            setDemoras([]);
+        } finally {
+            setLoadingDemoras(false);
+        }
+    };
+
+    // Función para cargar incidencias
+    const loadIncidencias = async () => {
+        setLoadingIncidencias(true);
+        try {
+            const incidenciasData = await apiGet('/incidencias');
+            if (Array.isArray(incidenciasData)) {
+                setIncidencias(incidenciasData);
+            }
+        } catch (err) {
+            console.error('Error cargando incidencias:', err);
+            setIncidencias([]);
+        } finally {
+            setLoadingIncidencias(false);
+        }
+    };
+
 
     
     // Estados para datos maestros
@@ -2288,7 +3587,7 @@ const Cotizaciones = () => {
             setError(null);
             try {
                 // Obtener todos los datos en paralelo
-                const [cotizacionesData, clientesData, usuariosData, proveedoresData, agentesData, localizacionesData, facturasData, documentosData] = await Promise.allSettled([
+                const [cotizacionesData, clientesData, usuariosData, proveedoresData, agentesData, localizacionesData, facturasData, documentosData, demorasData, incidenciasData] = await Promise.allSettled([
                     apiGet('/cotizaciones').catch(() => []),
                     apiGet('/clientes').catch(() => []),
                     apiGet('/usuarios').catch(() => []),
@@ -2296,7 +3595,9 @@ const Cotizaciones = () => {
                     apiGet('/agentes').catch(() => []),
                     apiGet('/localizaciones').catch(() => []),
                     apiGet('/facturas-cliente').catch(() => []),
-                    apiGet('/documentos-relacionados').catch(() => [])
+                    apiGet('/documentos-relacionados').catch(() => []),
+                    apiGet('/demoras').catch(() => []),
+                    apiGet('/incidencias').catch(() => [])
                 ]);
 
                 if (mounted) {
@@ -2321,6 +3622,12 @@ const Cotizaciones = () => {
                     }
                     if (documentosData.status === 'fulfilled' && Array.isArray(documentosData.value)) {
                         setDocumentos(documentosData.value);
+                    }
+                    if (demorasData.status === 'fulfilled' && Array.isArray(demorasData.value)) {
+                        setDemoras(demorasData.value);
+                    }
+                    if (incidenciasData.status === 'fulfilled' && Array.isArray(incidenciasData.value)) {
+                        setIncidencias(incidenciasData.value);
                     }
 
                     // Procesar cotizaciones solo si se obtuvieron exitosamente
@@ -2658,9 +3965,13 @@ const Cotizaciones = () => {
     };
 
     const filteredCotizaciones = useMemo(() => {
-        if (!searchTerm) return cotizaciones;
         return cotizaciones.filter((c) => {
             if (!c) return false;
+            
+            // Filtrar por estatus primero
+            if (statusFilter !== 'todas' && c.estatus !== statusFilter) {
+                return false;
+            }
             
             const searchableText = [
                 c.id_cotizacion || c.id || '',
@@ -2675,7 +3986,7 @@ const Cotizaciones = () => {
             
             return searchableText.includes(searchTerm.toLowerCase());
         });
-    }, [cotizaciones, searchTerm]);
+    }, [cotizaciones, searchTerm, statusFilter]);
 
     const handleAction = async (action, cotizacion) => {
         if (action === 'new') {
@@ -2783,6 +4094,20 @@ const Cotizaciones = () => {
                         />
                     </div>
 
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="form-select"
+                        style={{ flexShrink: 0, minWidth: '180px' }}
+                    >
+                        <option value="todas">Todas</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="enviada">Enviada</option>
+                        <option value="aprobada">Aprobada</option>
+                        <option value="rechazada">Rechazada</option>
+                        <option value="caducada">Caducada</option>
+                    </select>
+
                     <button
                         onClick={() => handleAction('new', null)}
                         className="btn btn-primary"
@@ -2863,6 +4188,10 @@ const Cotizaciones = () => {
                                     loadFacturas={loadFacturas}
                                     documentos={documentos}
                                     loadDocumentos={loadDocumentos}
+                                    demoras={demoras}
+                                    loadDemoras={loadDemoras}
+                                    incidencias={incidencias}
+                                    loadIncidencias={loadIncidencias}
                                     showNotification={showNotification}
                                 />
                             ))

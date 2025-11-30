@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
     Truck,
     Building2,
@@ -107,6 +107,10 @@ const getStatusOperacionDisplay = (status) => {
             };
     }
 };
+
+// Simple client-side canvas 'map' renderer (no external APIs)
+// It performs a linear equirectangular mapping of lat/lng to canvas coordinates.
+// This is intentionally simple because tracking is simulated.
 
 /* Operacion Form - agregar / editar */
 export const OperacionForm = ({
@@ -466,8 +470,108 @@ export const DeleteOperacionConfirm = ({
     </div>
 );
 
-const OperacionCard = ({ operacion, onAction }) => {
+const OperacionCard = ({ operacion, onAction, isTrackingOpen, trackingCoords = {}, setTrackingCoords, onSaveTracking, onCloseTracking }) => {
     const status = getStatusOperacionDisplay(operacion.estatus_operacion);
+    const canvasRef = useRef(null);
+
+    const latInitial = trackingCoords?.lat ?? operacion.tracking_latitud ?? operacion.latitud ?? '';
+    const lngInitial = trackingCoords?.lng ?? operacion.tracking_longitud ?? operacion.longitud ?? '';
+
+    // Draw simple canvas map when tracking panel is open and when coords change
+    useEffect(() => {
+        if (!isTrackingOpen) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const draw = () => {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            // background
+            ctx.fillStyle = '#0f1724';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+
+            // grid lines (long/lat guide)
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 6; i++) {
+                const x = (rect.width / 6) * i;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, rect.height); ctx.stroke();
+            }
+            for (let j = 0; j <= 4; j++) {
+                const y = (rect.height / 4) * j;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(rect.width, y); ctx.stroke();
+            }
+
+            // draw marker if valid coords
+            const lat = Number(trackingCoords?.lat ?? latInitial);
+            const lng = Number(trackingCoords?.lng ?? lngInitial);
+            if (!Number.isNaN(lat) && !Number.isNaN(lng) && lat !== '' && lng !== '') {
+                // project simple equirectangular: x from -180..180, y from 90..-90
+                const x = ((lng + 180) / 360) * rect.width;
+                const y = ((90 - lat) / 180) * rect.height;
+
+                // marker shadow
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+                ctx.ellipse(x+2, y+4, 10, 6, 0, 0, Math.PI*2);
+                ctx.fill();
+
+                // marker
+                ctx.beginPath();
+                ctx.fillStyle = '#ef4444';
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // coordinates label
+                ctx.font = '12px Inter, Arial';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`, x + 12, y - 10);
+            } else {
+                // hint text
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.font = '14px Inter, Arial';
+                ctx.fillText('Mapa simulado — ingresa latitud y longitud o haz click para fijar posición', 12, 22);
+            }
+        };
+
+        draw();
+
+        // click handler to set coords from canvas
+        const onClick = (ev) => {
+            const rect = canvas.getBoundingClientRect();
+            const cx = ev.clientX - rect.left;
+            const cy = ev.clientY - rect.top;
+            const lng = (cx / rect.width) * 360 - 180;
+            const lat = 90 - (cy / rect.height) * 180;
+            setTrackingCoords(operacion.id_operacion, { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) });
+        };
+
+        canvas.addEventListener('click', onClick);
+        window.addEventListener('resize', draw);
+
+        return () => {
+            canvas.removeEventListener('click', onClick);
+            window.removeEventListener('resize', draw);
+        };
+    }, [isTrackingOpen, trackingCoords?.lat, trackingCoords?.lng, latInitial, lngInitial]);
+
+    const handleLatChange = (e) => {
+        const v = e.target.value;
+        setTrackingCoords(operacion.id_operacion, { lat: v === '' ? '' : Number(v), lng: trackingCoords?.lng });
+    };
+
+    const handleLngChange = (e) => {
+        const v = e.target.value;
+        setTrackingCoords(operacion.id_operacion, { lat: trackingCoords?.lat, lng: v === '' ? '' : Number(v) });
+    };
+
+    const currentLat = trackingCoords?.lat ?? latInitial ?? '';
+    const currentLng = trackingCoords?.lng ?? lngInitial ?? '';
 
     return (
         <div
@@ -532,7 +636,7 @@ const OperacionCard = ({ operacion, onAction }) => {
                             className="form-label"
                             style={{ fontSize: "0.85rem" }}
                         >
-                            Cliente{" "}
+                            Cliente {" "}
                             {operacion.id_cotizacion &&
                                 `(Cot. #${operacion.id_cotizacion})`}
                         </label>
@@ -601,6 +705,30 @@ const OperacionCard = ({ operacion, onAction }) => {
                         </p>
                     </div>
                 </div>
+
+                {/* Tracking expanded area: map + lat/lng inputs */}
+                {isTrackingOpen && (
+                    <div style={{ marginTop: '1rem' }}>
+                        <div id={`map-${operacion.id_operacion}`} style={{ width: '100%', height: '320px', borderRadius: 8, overflow: 'hidden' }} />
+
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', alignItems: 'center' }}>
+                            <div style={{ flex: 1 }}>
+                                <label className="form-label">Latitud</label>
+                                <input type="number" step="0.000001" value={currentLat} onChange={handleLatChange} className="form-input" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label className="form-label">Longitud</label>
+                                <input type="number" step="0.000001" value={currentLng} onChange={handleLngChange} className="form-input" />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <button className="btn btn-primary" onClick={() => onSaveTracking(operacion.id_operacion)}>
+                                    <Save size={16} /> Guardar
+                                </button>
+                                <button className="btn btn-secondary" onClick={() => onCloseTracking()}>Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div
@@ -641,7 +769,7 @@ const OperacionCard = ({ operacion, onAction }) => {
                                     marginRight: 6,
                                 }}
                             />
-                            Arribo:{" "}
+                            Arribo: {" "}
                             {new Date(
                                 operacion.fecha_estimada_arribo
                             ).toLocaleDateString()}
@@ -663,7 +791,7 @@ const OperacionCard = ({ operacion, onAction }) => {
                                     marginRight: 6,
                                 }}
                             />
-                            Entrega:{" "}
+                            Entrega: {" "}
                             {new Date(
                                 operacion.fecha_estimada_entrega
                             ).toLocaleDateString()}
@@ -730,10 +858,15 @@ const initialOperacionForm = {
 const Operaciones = () => {
     const [operaciones, setOperaciones] = useState(initialOperaciones);
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("todas");
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedOperacion, setSelectedOperacion] = useState(null);
     const [formData, setFormData] = useState(initialOperacionForm);
+    // Tracking UI state
+    const [trackingOperacionId, setTrackingOperacionId] = useState(null);
+    const [trackingCoordsState, setTrackingCoordsState] = useState({});
+    const [trackingSaving, setTrackingSaving] = useState(false);
 
     // Cargar datos iniciales
     useEffect(() => {
@@ -752,11 +885,20 @@ const Operaciones = () => {
                     // Ordenar por ID ascendente (menor ID primero)
                     enrichedOps.sort((a, b) => a.id_operacion - b.id_operacion);
                     setOperaciones(enrichedOps);
+                    // Inicializar coordenadas de tracking en el estado local (si existen)
+                    const coordsMap = {};
+                    enrichedOps.forEach(op => {
+                        coordsMap[op.id_operacion] = {
+                            lat: op.tracking_latitud ?? op.latitud ?? '',
+                            lng: op.tracking_longitud ?? op.longitud ?? ''
+                        };
+                    });
+                    setTrackingCoordsState(coordsMap);
                 }
             } catch (err) {
                 console.error("Error cargando datos:", err);
             }
-        }
+        };
         loadData();
         return () => {
             mounted = false;
@@ -827,31 +969,92 @@ const Operaciones = () => {
     }, []);
 
     const filteredOperaciones = useMemo(() => {
-        if (!searchTerm) return operaciones;
-        return operaciones.filter((o) =>
-            `${o.id_operacion} ${o.referencia_booking} ${o.cliente_nombre} ${
+        return operaciones.filter((o) => {
+            if (!o) return false;
+            
+            // Filtrar por estatus primero
+            if (statusFilter !== 'todas' && o.estatus_operacion !== statusFilter) {
+                return false;
+            }
+            
+            const searchableText = `${o.id_operacion} ${o.referencia_booking} ${o.cliente_nombre} ${
                 o.usuario_operativo_nombre
             } ${TipoServicioDisplay[o.tipo_servicio]} ${o.origen_nombre} ${
                 o.destino_nombre
-            }`
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())
-        );
-    }, [operaciones, searchTerm]);
+            }`.toLowerCase();
+            
+            return searchableText.includes(searchTerm.toLowerCase());
+        });
+    }, [operaciones, searchTerm, statusFilter]);
 
     const handleAction = (action, operacion) => {
         if (action === "new") {
             openFormForNew();
         } else if (action === "view") {
-            alert(
-                `Navegando a la vista de TRACKING de Operación #${operacion.id_operacion}`
-            );
+            // Toggle tracking panel for this operación
+            if (trackingOperacionId === operacion.id_operacion) {
+                setTrackingOperacionId(null);
+            } else {
+                setTrackingOperacionId(operacion.id_operacion);
+            }
         } else if (action === "edit") {
             openFormForEdit(operacion);
         } else if (action === "delete") {
             openDeleteConfirm(operacion);
         }
     };
+
+    const setTrackingCoords = (operacionId, coords) => {
+        setTrackingCoordsState(prev => ({
+            ...prev,
+            [operacionId]: {
+                ...(prev[operacionId] || {}),
+                ...coords
+            }
+        }));
+    };
+
+    const handleSaveTracking = async (operacionId) => {
+        const coords = trackingCoordsState[operacionId] || {};
+        const lat = coords.lat;
+        const lng = coords.lng;
+        if (lat === '' || lng === '' || lat === undefined || lng === undefined || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+            alert('Por favor ingresa latitud y longitud válidas antes de guardar');
+            return;
+        }
+
+        setTrackingSaving(true);
+        try {
+            const payload = {
+                id_operacion: Number(operacionId),
+                latitud: Number(lat),
+                longitud: Number(lng),
+                // estatus_seguimiento es obligatorio en el DTO; usar un valor por defecto razonable
+                estatus_seguimiento: 'en_transito'
+            };
+            // Crear un registro de tracking (endpoint separado)
+            await apiPost('/tracking', payload);
+
+            // Intentar refrescar el último tracking para esta operación y actualizar estado local
+            try {
+                const latestTrackings = await apiGet(`/tracking/operacion/${operacionId}`);
+                const latest = Array.isArray(latestTrackings) && latestTrackings[0];
+                setOperaciones(prev => prev.map(op => op.id_operacion === operacionId ? ({ ...op, tracking_latitud: latest?.latitud ?? Number(lat), tracking_longitud: latest?.longitud ?? Number(lng) }) : op));
+            } catch (refreshErr) {
+                // Si falla el refresh, al menos actualizar con los valores enviados
+                setOperaciones(prev => prev.map(op => op.id_operacion === operacionId ? ({ ...op, tracking_latitud: Number(lat), tracking_longitud: Number(lng) }) : op));
+            }
+
+            alert('Coordenadas de tracking registradas correctamente');
+        } catch (err) {
+            console.error('Error guardando coordenadas de tracking:', err);
+            alert('Error al guardar coordenadas: ' + (err.message || ''));
+        } finally {
+            setTrackingSaving(false);
+        }
+    };
+
+    const handleCloseTracking = () => setTrackingOperacionId(null);
 
     const handleFormChange = (e) => {
         const { name, value, type } = e.target;
@@ -1023,6 +1226,19 @@ const Operaciones = () => {
                         />
                     </div>
 
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="form-select"
+                        style={{ flexShrink: 0, minWidth: '180px' }}
+                    >
+                        <option value="todas">Todas</option>
+                        <option value="PENDIENTE_DOC">Pen. Docs</option>
+                        <option value="EN_ORIGEN">En Origen</option>
+                        <option value="TRANSITO">En Tránsito</option>
+                        <option value="ENTREGADA">Entregada</option>
+                    </select>
+
                     <div style={{ display: "flex", gap: 8 }}>
                         <button
                             onClick={() => handleAction("new", null)}
@@ -1066,6 +1282,11 @@ const Operaciones = () => {
                                 key={o.id_operacion}
                                 operacion={o}
                                 onAction={handleAction}
+                                isTrackingOpen={trackingOperacionId === o.id_operacion}
+                                trackingCoords={trackingCoordsState[o.id_operacion]}
+                                setTrackingCoords={setTrackingCoords}
+                                onSaveTracking={handleSaveTracking}
+                                onCloseTracking={handleCloseTracking}
                             />
                         ))
                     ) : (
