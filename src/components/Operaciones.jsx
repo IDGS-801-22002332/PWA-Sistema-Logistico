@@ -2458,6 +2458,7 @@ const handleFormSubmit = async (e) => {
         fecha_estimada_entrega: formData.fecha_estimada_entrega || undefined,
         numero_referencia_proveedor: formData.numero_referencia_proveedor,
         notas_operacion: formData.notas_operacion || undefined,
+        estatus: formData.estatus || "pendiente_documentos",
     };
 
     try {
@@ -2972,5 +2973,3 @@ búsqueda.
 };
 
 export default Operaciones;
-
-
