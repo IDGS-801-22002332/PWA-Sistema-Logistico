@@ -9,7 +9,6 @@ const TipoServicioDisplay = {
     MARITIMO: 'Marítimo', 
     AEREO: 'Aéreo', 
     TERRESTRE: 'Terrestre',
-    // También agregamos las versiones en minúsculas que vienen del backend
     maritimo: 'Marítimo',
     aereo: 'Aéreo', 
     terrestre: 'Terrestre'
@@ -18,7 +17,6 @@ const TipoCargaDisplay = {
     FCL: 'Cont. Completo (FCL)', 
     LCL: 'Cont. Parcial (LCL)', 
     CARGA_SUELTA: 'Carga Suelta',
-    // También agregamos las versiones que pueden venir del backend
     LTL: 'Carga Parcial (LTL)'
 };
 const IncotermDisplay = { 
@@ -26,7 +24,7 @@ const IncotermDisplay = {
     CIF: 'CIF', 
     DDP: 'DDP', 
     EXW: 'EXW',
-    DAP: 'DAP' // Agregar DAP que viene en los datos
+    DAP: 'DAP'
 };
 const getServiceIcon = (tipo) => {
     switch (tipo?.toLowerCase()) {
@@ -62,7 +60,7 @@ const initialFormData = {
     fecha_estimada_arribo: '',
     fecha_estimada_entrega: '',
     estatus: 'pendiente',
-    id_solicitud_cliente: '', // Referencia a la solicitud original
+    id_solicitud_cliente: '',
 };
 
 // Formulario para crear/editar cotización
@@ -457,7 +455,7 @@ const DeleteConfirmBanner = ({ selectedCotizacion, deleteCotizacion, cancel }) =
     </div>
 );
 
-// Banner de notificaciones (éxito y error)
+// Banner de notificaciones
 const NotificationBanner = ({ type, message, onClose }) => {
     if (!message) return null;
 
@@ -679,7 +677,7 @@ const FacturasSection = ({ cotizacionId, facturas, onRefreshFacturas, showNotifi
     const handleCreateFactura = () => {
         setCreatingFactura(true);
         setFormDataFactura({
-            numero_factura: `FAC-${Date.now()}`, // Generar número automático
+            numero_factura: `FAC-${Date.now()}`,
             fecha_vencimiento: '',
             monto_total: '',
             monto_pagado: '0',
@@ -748,7 +746,6 @@ const FacturasSection = ({ cotizacionId, facturas, onRefreshFacturas, showNotifi
         });
     };
 
-    // Mostrar encabezado incluso si no hay facturas, para mantener consistencia visual
     if (facturasRelacionadas.length === 0 && !creatingFactura) {
         return (
             <div style={{ display: 'grid', gap: '0.5rem' }}>
@@ -1345,7 +1342,7 @@ const DocumentosSection = ({ cotizacionId, documentos, onRefreshDocumentos, show
         nombre_documento: '',
         tipo_documento: 'otro',
         url_archivo: '',
-        id_usuario_carga: 1 // Valor por defecto temporal
+        id_usuario_carga: 1
     });
 
     // Filtrar documentos relacionados con esta cotización
@@ -1826,7 +1823,7 @@ const DocumentosSection = ({ cotizacionId, documentos, onRefreshDocumentos, show
     );
 };
 
-// DEMORAS SECTION COMPONENT
+// DEMORAS
 const DemorasSection = ({ cotizacionId, operacionId, demoras = [], onRefreshDemoras, showNotification, cotizacion }) => {
     const [creatingDemora, setCreatingDemora] = useState(false);
     const [savingNewDemora, setSavingNewDemora] = useState(false);
@@ -1840,8 +1837,6 @@ const DemorasSection = ({ cotizacionId, operacionId, demoras = [], onRefreshDemo
         moneda: 'USD'
     });
 
-    // Filtrar demoras para esta operación (demoras están vinculadas a operación, no a cotización)
-    // Usar coerción numérica para evitar mismatches entre strings y números devueltos por el API
     const demorasRelacionadas = demoras.filter(demora => 
         Number(demora.id_operacion) === Number(operacionId)
     );
@@ -2417,7 +2412,6 @@ const DemorasSection = ({ cotizacionId, operacionId, demoras = [], onRefreshDemo
     );
 };
 
-// INCIDENCIAS SECTION COMPONENT
 const IncidenciasSection = ({ cotizacionId, operacionId, incidencias = [], onRefreshIncidencias, showNotification, cotizacion }) => {
     const [creatingIncidencia, setCreatingIncidencia] = useState(false);
     const [savingNewIncidencia, setSavingNewIncidencia] = useState(false);
@@ -4078,8 +4072,8 @@ const Cotizaciones = () => {
                     Administra y da seguimiento a todas las cotizaciones creadas.
                 </p>
 
-                <div className="agents-controls" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1.5rem' }}>
-                    <div className="search-bar-wrapper">
+                <div className="agents-controls" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1.5rem', flexWrap: 'nowrap', gap: '1rem' }}>
+                    <div className="search-bar-wrapper" style={{ flex: '1 1 40%' }}>
                         <div className="search-icon-left">
                             <Search className="search-icon" />
                         </div>
@@ -4098,7 +4092,7 @@ const Cotizaciones = () => {
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="form-select"
-                        style={{ flexShrink: 0, minWidth: '180px' }}
+                        style={{ flex: '0 1 180px' }}
                     >
                         <option value="todas">Todas</option>
                         <option value="pendiente">Pendiente</option>
@@ -4112,6 +4106,7 @@ const Cotizaciones = () => {
                         onClick={() => handleAction('new', null)}
                         className="btn btn-primary"
                         disabled={isFormOpen}
+                        style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
                     >
                         <Plus size={20} />
                         Crear Nueva Cotización

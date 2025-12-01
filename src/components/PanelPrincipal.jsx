@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from "../Layout/AppLayout";
-import { Users, Truck, Package, Activity, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, PieChart, Globe, Building2, UserCheck, Timer, MapPin, FileText, Calendar } from 'lucide-react';
+import { Users, Truck, Package, Activity, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, PieChart, Globe, Building2, UserCheck, Timer, MapPin, FileText, Calendar, Ship, Plane, XCircle, Briefcase, UserCog, BadgePercent } from 'lucide-react';
 import { apiGet } from '../services/api';
 
 const PanelPrincipal = () => {
@@ -159,7 +159,8 @@ const PanelPrincipal = () => {
 
                 {/* KPIs Principales */}
                 <h3 className="content-title" style={{ fontSize: '1.5rem', marginTop: '2rem', marginBottom: '1rem' }}>
-                    📊 Indicadores Clave de Desempeño (KPIs)
+                    <BarChart3 size={24} style={{ verticalAlign: 'bottom', marginRight: '0.5rem' }} />
+                    Indicadores Clave de Desempeño (KPIs)
                 </h3>
 
                 <div className="dashboard-grid">
@@ -202,31 +203,42 @@ const PanelPrincipal = () => {
 
                 {/* Métricas Operativas */}
                 <h3 className="content-title" style={{ fontSize: '1.4rem', marginTop: '2.5rem', marginBottom: '1rem' }}>
-                    ⚡ Resumen Operativo
+                    <Activity size={22} style={{ verticalAlign: 'bottom', marginRight: '0.5rem' }} />
+                    Resumen Operativo
                 </h3>
 
                 <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                     <div className="card-kpi" style={{ gridColumn: 'span 1' }}>
                         <h3 className="card-title">Estado de Operaciones</h3>
                         <div style={{ fontSize: '1rem', marginTop: '10px', lineHeight: '1.6' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>🟡 Pendiente Docs:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Clock size={16} className="kpi-icon warning" /> Pendiente Docs:
+                                </span> 
                                 <strong>{kpis.operacionesPorEstatus?.pendiente_documentos || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>🚚 En Tránsito:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Truck size={16} className="kpi-icon info" /> En Tránsito:
+                                </span> 
                                 <strong>{kpis.operacionesPorEstatus?.en_transito || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>🏛️ En Aduana:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Building2 size={16} className="kpi-icon primary" /> En Aduana:
+                                </span> 
                                 <strong>{kpis.operacionesPorEstatus?.en_aduana || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>✅ Entregadas:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <CheckCircle size={16} className="kpi-icon success" /> Entregadas:
+                                </span> 
                                 <strong style={{ color: 'var(--success)' }}>{kpis.operacionesPorEstatus?.entregado || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>❌ Canceladas:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <XCircle size={16} className="kpi-icon danger" /> Canceladas:
+                                </span> 
                                 <strong style={{ color: 'var(--danger)' }}>{kpis.operacionesPorEstatus?.cancelado || 0}</strong>
                             </div>
                         </div>
@@ -236,16 +248,22 @@ const PanelPrincipal = () => {
                     <div className="card-kpi" style={{ gridColumn: 'span 1' }}>
                         <h3 className="card-title">Distribución por Servicio</h3>
                         <div style={{ fontSize: '1rem', marginTop: '10px', lineHeight: '1.6' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>🚢 Marítimo:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Ship size={16} className="kpi-icon primary" /> Marítimo:
+                                </span> 
                                 <strong>{kpis.operacionesPorTipoServicio?.maritimo || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>✈️ Aéreo:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Plane size={16} className="kpi-icon info" /> Aéreo:
+                                </span> 
                                 <strong>{kpis.operacionesPorTipoServicio?.aereo || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>🚛 Terrestre:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Truck size={16} className="kpi-icon secondary" /> Terrestre:
+                                </span> 
                                 <strong>{kpis.operacionesPorTipoServicio?.terrestre || 0}</strong>
                             </div>
                         </div>
@@ -255,7 +273,8 @@ const PanelPrincipal = () => {
 
                 {/* Métricas Comerciales */}
                 <h3 className="content-title" style={{ fontSize: '1.4rem', marginTop: '2.5rem', marginBottom: '1rem' }}>
-                    💼 Métricas Comerciales y Gestión
+                    <Briefcase size={22} style={{ verticalAlign: 'bottom', marginRight: '0.5rem' }} />
+                    Métricas Comerciales y Gestión
                 </h3>
 
                 <div className="dashboard-grid">
@@ -298,27 +317,36 @@ const PanelPrincipal = () => {
 
                 {/* Recursos Humanos y Organización */}
                 <h3 className="content-title" style={{ fontSize: '1.4rem', marginTop: '2.5rem', marginBottom: '1rem' }}>
-                    👥 Recursos y Organización
+                    <Users size={22} style={{ verticalAlign: 'bottom', marginRight: '0.5rem' }} />
+                    Recursos y Organización
                 </h3>
 
                 <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
                     <div className="card-kpi" style={{ gridColumn: 'span 1' }}>
                         <h3 className="card-title">Equipo de Trabajo</h3>
                         <div style={{ fontSize: '1rem', marginTop: '10px', lineHeight: '1.6' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>👨‍💼 Administradores:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <UserCog size={16} className="kpi-icon primary" /> Administradores:
+                                </span> 
                                 <strong>{kpis.usuariosPorRol?.admin || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>💰 Equipo Ventas:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <BadgePercent size={16} className="kpi-icon success" /> Equipo Ventas:
+                                </span> 
                                 <strong>{kpis.usuariosPorRol?.ventas || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span>⚙️ Equipo Operaciones:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Activity size={16} className="kpi-icon info" /> Equipo Operaciones:
+                                </span> 
                                 <strong>{kpis.usuariosPorRol?.operaciones || 0}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>🤝 Usuarios Cliente:</span> 
+                            <div className="kpi-list-item">
+                                <span>
+                                    <Users size={16} className="kpi-icon secondary" /> Usuarios Cliente:
+                                </span> 
                                 <strong>{kpis.usuariosPorRol?.cliente || 0}</strong>
                             </div>
                         </div>

@@ -558,8 +558,8 @@ const Solicitudes = () => {
                     Lista de solicitudes de flete recibidas de los clientes para su procesamiento.
                 </p>
 
-                <div className="agents-controls" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1.5rem' }}>
-                    <div className="search-bar-wrapper">
+                <div className="agents-controls" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1.5rem', flexWrap: 'nowrap', gap: '1rem' }}>
+                    <div className="search-bar-wrapper" style={{ flex: '1 1 40%' }}>
                         <div className="search-icon-left">
                             <Search className="search-icon" />
                         </div>
@@ -575,7 +575,7 @@ const Solicitudes = () => {
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="form-select"
-                        style={{ flexShrink: 0, minWidth: '180px' }}
+                        style={{ flex: '0 1 180px' }}
                     >
                         <option value="todas">Todas</option>
                         <option value="nueva">Nueva</option>
